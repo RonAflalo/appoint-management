@@ -102,11 +102,13 @@ export default function PublicBooking() {
     fetchSlots(date);
   };
 
+  const isCustomer = user && user.role === 'user';
+
   const handleBook = async () => {
-    const bookName = user ? user.name : guestName;
-    const bookEmail = user ? user.email : guestEmail;
-    if (!bookName || !bookEmail) {
-      setBookingError('יש למלא שם ואימייל');
+    const bookName = isCustomer ? user.name : guestName;
+    const bookEmail = isCustomer ? user.email : guestEmail;
+    if (!isCustomer && (!bookName || !bookEmail)) {
+      setBookingError('יש להתחבר או להירשם לפני קביעת תור');
       return;
     }
     if (!selectedService || !selectedSlot) return;
@@ -215,7 +217,7 @@ export default function PublicBooking() {
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
             <div className="text-6xl mb-4">✅</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">התור נקבע בהצלחה!</h1>
-            <p className="text-gray-500 mb-2">אימייל אישור נשלח ל-<span className="font-medium text-gray-800">{user?.email || guestEmail}</span></p>
+            <p className="text-gray-500 mb-2">אימייל אישור נשלח ל-<span className="font-medium text-gray-800">{(user?.role === 'user' ? user.email : null) || guestEmail}</span></p>
             <div className="bg-indigo-50 rounded-xl p-4 my-6 text-right space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">שירות</span>
@@ -452,7 +454,7 @@ export default function PublicBooking() {
                   </div>
                 </div>
 
-                {user ? (
+                {isCustomer ? (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                       {user.name[0]}
@@ -463,32 +465,24 @@ export default function PublicBooking() {
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-center text-sm">
-                      <p className="text-gray-700 mb-2">יש לך חשבון? <Link to={`/login?redirect=/book/${slug}`} className="text-indigo-600 font-semibold hover:text-indigo-700">כניסה</Link> לחוויה מהירה יותר</p>
-                      <p className="text-gray-500 text-xs">או הירשם: <Link to={`/register?slug=${slug}`} className="text-indigo-600 hover:text-indigo-700">הרשמה</Link></p>
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center space-y-3">
+                    <p className="text-amber-800 font-semibold text-sm">נדרש חשבון לקביעת תור</p>
+                    <p className="text-gray-500 text-xs">יש להתחבר או להירשם כדי לקבוע תור</p>
+                    <div className="flex gap-3 justify-center mt-2">
+                      <Link
+                        to={`/register?slug=${slug}`}
+                        className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                      >
+                        הרשמה
+                      </Link>
+                      <Link
+                        to={`/login?redirect=/book/${slug}`}
+                        className="bg-white border border-indigo-300 text-indigo-600 px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors"
+                      >
+                        כניסה
+                      </Link>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">שם מלא</label>
-                      <input
-                        type="text"
-                        value={guestName}
-                        onChange={e => setGuestName(e.target.value)}
-                        placeholder="ישראל ישראלי"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">אימייל</label>
-                      <input
-                        type="email"
-                        value={guestEmail}
-                        onChange={e => setGuestEmail(e.target.value)}
-                        placeholder="israel@example.com"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                  </>
+                  </div>
                 )}
 
                 <div>
@@ -531,8 +525,8 @@ export default function PublicBooking() {
             ) : (
               <button
                 onClick={handleBook}
-                disabled={booking}
-                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                disabled={booking || !isCustomer}
+                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
               >
                 {booking ? (
                   <>
