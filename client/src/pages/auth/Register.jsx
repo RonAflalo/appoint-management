@@ -1,16 +1,27 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { register } from '../../api/auth';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { getBusinessInfo } from '../../api/public';
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [businessName, setBusinessName] = useState(null);
   const { setUser } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const slug = searchParams.get('slug');
+
+  useEffect(() => {
+    if (!slug) return;
+    getBusinessInfo(slug)
+      .then(data => { if (data.success) setBusinessName(data.business.name); })
+      .catch(() => {});
+  }, [slug]);
 
   const validate = () => {
     const newErrors = {};
@@ -39,10 +50,11 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      const data = await register({ name: form.name, email: form.email, password: form.password });
+      const data = await register({ name: form.name, email: form.email, password: form.password, slug: slug || undefined });
       setUser(data.user);
       addToast('נרשמת בהצלחה!');
-      navigate('/customer');
+      if (slug) navigate(`/book/${slug}`);
+      else navigate('/customer');
     } catch (err) {
       setErrors({ general: err.response?.data?.message || 'שגיאה בהרשמה' });
     } finally {
@@ -56,10 +68,14 @@ export default function Register() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4 shadow-lg">
-            <span className="text-3xl">✂️</span>
+            <span className="text-3xl">📅</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">הרשמה</h1>
-          <p className="text-gray-500 mt-2">צור חשבון חדש</p>
+          {businessName ? (
+            <p className="text-gray-500 mt-2">נרשם לעסק: <span className="font-semibold text-indigo-600">{businessName}</span></p>
+          ) : (
+            <p className="text-gray-500 mt-2">צור חשבון חדש</p>
+          )}
         </div>
 
         {/* Card */}
@@ -144,7 +160,7 @@ export default function Register() {
 
           <div className="mt-6 text-center text-sm text-gray-500">
             כבר יש לך חשבון?{' '}
-            <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">
+            <Link to={slug ? `/login?redirect=/book/${slug}` : '/login'} className="text-indigo-600 hover:text-indigo-700 font-medium">
               כניסה כאן
             </Link>
           </div>

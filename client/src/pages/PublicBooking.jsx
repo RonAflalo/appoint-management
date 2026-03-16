@@ -4,11 +4,13 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { getBusinessInfo, getPublicServices, getPublicWorkers, getPublicSlots, getPublicAvailableDays, publicBook } from '../api/public';
 import { toDateString, formatTime } from '../utils/dateUtils';
+import { useAuth } from '../hooks/useAuth';
 
 const STEPS = ['ברוך הבא', 'בחר שירות', 'בחר עובד', 'בחר תאריך', 'בחר שעה', 'פרטים ואישור'];
 
 export default function PublicBooking() {
   const { slug } = useParams();
+  const { user } = useAuth();
 
   const [step, setStep] = useState(0);
   const [business, setBusiness] = useState(null);
@@ -101,7 +103,9 @@ export default function PublicBooking() {
   };
 
   const handleBook = async () => {
-    if (!guestName || !guestEmail) {
+    const bookName = user ? user.name : guestName;
+    const bookEmail = user ? user.email : guestEmail;
+    if (!bookName || !bookEmail) {
       setBookingError('יש למלא שם ואימייל');
       return;
     }
@@ -133,8 +137,8 @@ export default function PublicBooking() {
         serviceId: selectedService.id,
         start_time: selectedSlot,
         notes: notes || undefined,
-        guestName,
-        guestEmail,
+        guestName: bookName,
+        guestEmail: bookEmail,
       });
       setBooked(true);
     } catch (err) {
@@ -211,7 +215,7 @@ export default function PublicBooking() {
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
             <div className="text-6xl mb-4">✅</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">התור נקבע בהצלחה!</h1>
-            <p className="text-gray-500 mb-2">אימייל אישור נשלח ל-<span className="font-medium text-gray-800">{guestEmail}</span></p>
+            <p className="text-gray-500 mb-2">אימייל אישור נשלח ל-<span className="font-medium text-gray-800">{user?.email || guestEmail}</span></p>
             <div className="bg-indigo-50 rounded-xl p-4 my-6 text-right space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">שירות</span>
@@ -448,26 +452,45 @@ export default function PublicBooking() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">שם מלא</label>
-                  <input
-                    type="text"
-                    value={guestName}
-                    onChange={e => setGuestName(e.target.value)}
-                    placeholder="ישראל ישראלי"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">אימייל</label>
-                  <input
-                    type="email"
-                    value={guestEmail}
-                    onChange={e => setGuestEmail(e.target.value)}
-                    placeholder="israel@example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+                {user ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                      {user.name[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-green-800">מזמין כ-{user.name}</p>
+                      <p className="text-xs text-green-600">{user.email}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-center text-sm">
+                      <p className="text-gray-700 mb-2">יש לך חשבון? <Link to={`/login?redirect=/book/${slug}`} className="text-indigo-600 font-semibold hover:text-indigo-700">כניסה</Link> לחוויה מהירה יותר</p>
+                      <p className="text-gray-500 text-xs">או הירשם: <Link to={`/register?slug=${slug}`} className="text-indigo-600 hover:text-indigo-700">הרשמה</Link></p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">שם מלא</label>
+                      <input
+                        type="text"
+                        value={guestName}
+                        onChange={e => setGuestName(e.target.value)}
+                        placeholder="ישראל ישראלי"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">אימייל</label>
+                      <input
+                        type="email"
+                        value={guestEmail}
+                        onChange={e => setGuestEmail(e.target.value)}
+                        placeholder="israel@example.com"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </>
+                )}
+
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">הערות (אופציונלי)</label>
                   <textarea

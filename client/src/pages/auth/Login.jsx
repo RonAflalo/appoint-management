@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -12,6 +12,8 @@ export default function Login() {
   const { setUser } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +27,8 @@ export default function Login() {
       const data = await login({ email, password });
       setUser(data.user);
       addToast('התחברת בהצלחה!');
-      if (data.user.role === 'admin') navigate('/admin');
+      if (redirect) navigate(redirect);
+      else if (data.user.role === 'admin') navigate('/admin');
       else if (data.user.role === 'worker') navigate('/worker');
       else navigate('/customer');
     } catch (err) {
@@ -100,7 +103,10 @@ export default function Login() {
 
           <div className="mt-6 text-center text-sm text-gray-500">
             אין לך חשבון?{' '}
-            <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
+            <Link
+              to={redirect?.startsWith('/book/') ? `/register?slug=${redirect.split('/book/')[1]}` : '/register'}
+              className="text-indigo-600 hover:text-indigo-700 font-medium"
+            >
               הירשם כאן
             </Link>
           </div>

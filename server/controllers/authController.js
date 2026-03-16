@@ -25,7 +25,7 @@ function createToken(user) {
 }
 
 const register = (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, slug } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: 'יש למלא את כל השדות' });
   }
@@ -35,17 +35,36 @@ const register = (req, res) => {
 
   const db = getDb();
 
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  // Resolve business from slug
+  let businessId = null;
+  if (slug) {
+    const business = db.prepare('SELECT id FROM businesses WHERE slug = ?').get(slug);
+    if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
+    businessId = business.id;
+  }
+
+  const existing = db.prepare('SELECT id, role FROM users WHERE email = ?').get(email);
+
   if (existing) {
-    return res.status(409).json({ success: false, message: 'כתובת אימייל זו כבר רשומה במערכת' });
+    // Allow claiming a guest account (created automatically during a previous booking)
+    if (existing.role !== 'user') {
+      return res.status(409).json({ success: false, message: 'כתובת אימייל זו כבר רשומה במערכת' });
+    }
+    const passwordHash = bcrypt.hashSync(password, 10);
+    db.prepare(`
+      UPDATE users SET name = ?, password_hash = ?, business_id = COALESCE(?, business_id) WHERE id = ?
+    `).run(name, passwordHash, businessId, existing.id);
+    const user = db.prepare('SELECT id, name, email, role, business_id FROM users WHERE id = ?').get(existing.id);
+    const token = createToken(user);
+    res.cookie('token', token, COOKIE_OPTIONS);
+    return res.json({ success: true, message: 'נרשמת בהצלחה', user: { id: user.id, name: user.name, email: user.email, role: user.role, business_id: user.business_id } });
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);
-
   const result = db.prepare(`
     INSERT INTO users (name, email, password_hash, role, business_id)
-    VALUES (?, ?, ?, 'user', 1)
-  `).run(name, email, passwordHash);
+    VALUES (?, ?, ?, 'user', ?)
+  `).run(name, email, passwordHash, businessId);
 
   const user = db.prepare('SELECT id, name, email, role, business_id FROM users WHERE id = ?').get(result.lastInsertRowid);
   const token = createToken(user);
