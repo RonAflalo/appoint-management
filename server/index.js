@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 const { initializeDatabase } = require('./db/database');
 const { verifyEmailConnection } = require('./services/emailService');
 
@@ -31,6 +32,13 @@ app.use('/api/worker', workerRoutes);
 app.use('/api', userRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api', tenantRoutes);
+
+// Serve React in production
+if (process.env.NODE_ENV === 'production') {
+  const clientDist = path.join(__dirname, '../client/dist');
+  app.use(express.static(clientDist));
+  app.get('*', (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
+}
 
 // Global error handler
 app.use((err, req, res, next) => {

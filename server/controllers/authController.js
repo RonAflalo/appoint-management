@@ -5,7 +5,7 @@ const { getDb } = require('../db/database');
 const JWT_SECRET = process.env.JWT_SECRET || 'appointment-super-secret-key-change-in-production';
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: false,
+  secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
