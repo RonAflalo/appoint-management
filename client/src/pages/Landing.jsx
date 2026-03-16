@@ -169,12 +169,6 @@ export default function Landing() {
               >
                 התחל בחינם — ללא כרטיס אשראי
               </button>
-              <Link
-                to="/book/davids-barbershop"
-                className="w-full sm:w-auto border-2 border-white text-white font-bold px-8 py-4 rounded-xl hover:bg-white/10 transition-colors text-center"
-              >
-                צפה בדמו
-              </Link>
             </div>
           </div>
           <div className="flex-1 w-full max-w-md">
