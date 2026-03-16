@@ -35,15 +35,6 @@ export default function Login() {
     }
   };
 
-  const fillDemo = (role) => {
-    if (role === 'admin') {
-      setEmail('admin@demo.com');
-      setPassword('admin123');
-    } else {
-      setEmail('worker@demo.com');
-      setPassword('worker123');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-4" dir="rtl">
@@ -51,9 +42,9 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4 shadow-lg">
-            <span className="text-3xl">✂️</span>
+            <span className="text-3xl">📅</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">מנהל תורים</h1>
+          <h1 className="text-3xl font-bold text-gray-900">תוריי</h1>
           <p className="text-gray-500 mt-2">כניסה לחשבון שלך</p>
         </div>
 
@@ -115,36 +106,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Demo credentials */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">פרטי כניסה לדמו</p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <div>
-                <span className="font-medium text-gray-700">מנהל: </span>
-                <span className="text-gray-500 font-mono text-xs">admin@demo.com / admin123</span>
-              </div>
-              <button
-                onClick={() => fillDemo('admin')}
-                className="text-xs text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded hover:bg-indigo-50"
-              >
-                מלא
-              </button>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <div>
-                <span className="font-medium text-gray-700">עובד: </span>
-                <span className="text-gray-500 font-mono text-xs">worker@demo.com / worker123</span>
-              </div>
-              <button
-                onClick={() => fillDemo('worker')}
-                className="text-xs text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded hover:bg-indigo-50"
-              >
-                מלא
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
