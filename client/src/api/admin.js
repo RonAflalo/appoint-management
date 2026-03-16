@@ -1,0 +1,14 @@
+import api from './axios';
+export const getWorkers = () => api.get('/admin/workers').then(r => r.data);
+export const createWorker = (data) => api.post('/admin/workers', data).then(r => r.data);
+export const updateWorker = (id, data) => api.put(`/admin/workers/${id}`, data).then(r => r.data);
+export const deleteWorker = (id) => api.delete(`/admin/workers/${id}`).then(r => r.data);
+export const getWorkerAvailability = (id) => api.get(`/admin/workers/${id}/availability`).then(r => r.data);
+export const getServices = () => api.get('/admin/services').then(r => r.data);
+export const createService = (data) => api.post('/admin/services', data).then(r => r.data);
+export const updateService = (id, data) => api.put(`/admin/services/${id}`, data).then(r => r.data);
+export const deleteService = (id) => api.delete(`/admin/services/${id}`).then(r => r.data);
+export const getAppointments = (params) => api.get('/admin/appointments', { params }).then(r => r.data);
+export const updateAppointmentStatus = (id, status) => api.put(`/admin/appointments/${id}/status`, { status }).then(r => r.data);
+export const getSettings = () => api.get('/admin/settings').then(r => r.data);
+export const updateSettings = (data) => api.put('/admin/settings', data).then(r => r.data);

@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'Heebo', 'Assistant', sans-serif;
+}
+
+body {
+  direction: rtl;
+  text-align: right;
+}
+
+/* React Calendar RTL overrides */
+.react-calendar {
+  direction: rtl;
+  font-family: 'Heebo', sans-serif;
+  width: 100%;
+  border: none;
+  border-radius: 0.5rem;
+}
+
+.react-calendar__navigation button {
+  font-family: 'Heebo', sans-serif;
+}
+
+.react-calendar__tile--active {
+  background: #6366f1 !important;
+  border-radius: 0.375rem;
+}
+
+.react-calendar__tile--now {
+  background: #e0e7ff;
+  border-radius: 0.375rem;
+}
+
+.react-calendar__tile:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+}
