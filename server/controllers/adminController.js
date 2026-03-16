@@ -10,7 +10,7 @@ const getWorkers = (req, res) => {
   const workers = db.prepare(`
     SELECT id, name, email, role, is_worker, is_active, created_at
     FROM users
-    WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ?
+    WHERE (role = 'worker' OR role = 'admin') AND business_id = ?
     ORDER BY role DESC, created_at DESC
   `).all(req.user.business_id);
   res.json({ success: true, workers });
