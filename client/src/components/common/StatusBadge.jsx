@@ -3,6 +3,7 @@ const STATUS_CONFIG = {
   confirmed: { label: 'מאושר', className: 'bg-green-100 text-green-800' },
   completed: { label: 'הושלם', className: 'bg-blue-100 text-blue-800' },
   cancelled: { label: 'בוטל', className: 'bg-red-100 text-red-800' },
+  reschedule_requested: { label: 'שינוי מועד', className: 'bg-orange-100 text-orange-800' },
 };
 
 export default function StatusBadge({ status }) {

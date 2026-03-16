@@ -10,5 +10,9 @@ export const updateService = (id, data) => api.put(`/admin/services/${id}`, data
 export const deleteService = (id) => api.delete(`/admin/services/${id}`).then(r => r.data);
 export const getAppointments = (params) => api.get('/admin/appointments', { params }).then(r => r.data);
 export const updateAppointmentStatus = (id, status) => api.put(`/admin/appointments/${id}/status`, { status }).then(r => r.data);
+export const requestAdminReschedule = (id, data) => api.post(`/admin/appointments/${id}/reschedule`, data).then(r => r.data);
 export const getSettings = () => api.get('/admin/settings').then(r => r.data);
 export const updateSettings = (data) => api.put('/admin/settings', data).then(r => r.data);
+export const getWorkersCalendar = (year, month) => api.get('/admin/workers-calendar', { params: { year, month } }).then(r => r.data);
+export const getWorkersDayDetail = (date) => api.get('/admin/workers-calendar/day', { params: { date } }).then(r => r.data);
+export const toggleAdminAsWorker = () => api.patch('/admin/me/worker-toggle').then(r => r.data);

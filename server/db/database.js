@@ -61,6 +61,27 @@ function initializeDatabase() {
     );
   `);
 
+  // Migrate: add is_worker flag for admin-as-worker support
+  try { db.exec('ALTER TABLE users ADD COLUMN is_worker INTEGER NOT NULL DEFAULT 0'); } catch (_) {}
+  // Auto-enable is_worker for admins in businesses that have no workers yet
+  try {
+    db.exec(`
+      UPDATE users SET is_worker = 1
+      WHERE role = 'admin' AND is_worker = 0
+        AND NOT EXISTS (
+          SELECT 1 FROM users w WHERE w.role = 'worker' AND w.business_id = users.business_id AND w.is_active = 1
+        )
+    `);
+  } catch (_) {}
+
+  // Migrate: add reschedule columns if they don't exist yet
+  try { db.exec('ALTER TABLE appointments ADD COLUMN suggested_time TEXT'); } catch (_) {}
+  try { db.exec('ALTER TABLE appointments ADD COLUMN reschedule_note TEXT'); } catch (_) {}
+
+  // Migrate: add slug to businesses
+  try { db.exec("ALTER TABLE businesses ADD COLUMN slug TEXT"); } catch (_) {}
+  try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug)"); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

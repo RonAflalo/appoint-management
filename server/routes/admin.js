@@ -3,9 +3,11 @@ const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const {
   getWorkers, createWorker, updateWorker, deleteWorker,
+  toggleAdminAsWorker,
   getWorkerAvailability,
+  getWorkersCalendar, getWorkersDayDetail,
   getServices, createService, updateService, deleteService,
-  getAppointments, updateAppointmentStatus,
+  getAppointments, updateAppointmentStatus, requestReschedule,
   getSettings, updateSettings,
 } = require('../controllers/adminController');
 
@@ -13,6 +15,7 @@ router.use(authenticate, authorize('admin'));
 
 router.get('/workers', getWorkers);
 router.post('/workers', createWorker);
+router.patch('/me/worker-toggle', toggleAdminAsWorker);
 router.put('/workers/:id', updateWorker);
 router.delete('/workers/:id', deleteWorker);
 router.get('/workers/:id/availability', getWorkerAvailability);
@@ -24,8 +27,12 @@ router.delete('/services/:id', deleteService);
 
 router.get('/appointments', getAppointments);
 router.put('/appointments/:id/status', updateAppointmentStatus);
+router.post('/appointments/:id/reschedule', requestReschedule);
 
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
+
+router.get('/workers-calendar', getWorkersCalendar);
+router.get('/workers-calendar/day', getWorkersDayDetail);
 
 module.exports = router;

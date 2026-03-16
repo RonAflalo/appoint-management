@@ -103,6 +103,10 @@ export default function AdminWorkers() {
     }
   };
 
+  const adminWorkers = workers.filter(w => w.role === 'admin');
+  const regularWorkers = workers.filter(w => w.role === 'worker');
+
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -110,7 +114,7 @@ export default function AdminWorkers() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">עובדים</h1>
-          <p className="text-gray-500 text-sm mt-1">{workers.length} עובדים במערכת</p>
+          <p className="text-gray-500 text-sm mt-1">{regularWorkers.length} עובדים במערכת</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -121,11 +125,33 @@ export default function AdminWorkers() {
         </button>
       </div>
 
-      {workers.length === 0 ? (
+      {/* Admin-as-worker card */}
+      {adminWorkers.map(admin => (
+        <div key={admin.id} className="bg-white rounded-xl shadow-sm border border-indigo-100 p-4 mb-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold text-lg flex-shrink-0">
+            {admin.name?.[0]}
+          </div>
+          <div className="flex-1">
+            <div className="font-semibold text-gray-900 flex items-center gap-2">
+              {admin.name}
+              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">מנהל + עובד</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-0.5">{admin.email}</div>
+          </div>
+          <button
+            onClick={() => openAvailability(admin)}
+            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium px-2 py-1"
+          >
+            🗓 זמינות
+          </button>
+        </div>
+      ))}
+
+      {regularWorkers.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <span className="text-5xl mb-4 block">👥</span>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">אין עובדים</h3>
-          <p className="text-gray-500 text-sm mb-4">הוסף עובד ראשון כדי להתחיל</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">אין עובדים נוספים</h3>
+          <p className="text-gray-500 text-sm mb-4">הוסף עובד כדי לנהל לו תורים נפרדים</p>
           <button
             onClick={() => setShowAddModal(true)}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm"
@@ -145,7 +171,7 @@ export default function AdminWorkers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {workers.map(worker => (
+              {regularWorkers.map(worker => (
                 <tr key={worker.id} className="hover:bg-gray-50">
                   <td className="px-4 py-4 font-medium text-gray-900">{worker.name}</td>
                   <td className="px-4 py-4 text-gray-600 font-mono text-xs">{worker.email}</td>

@@ -2,6 +2,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
+// Public pages
+import Landing from './pages/Landing';
+import PublicBooking from './pages/PublicBooking';
+
 // Auth pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -12,6 +16,7 @@ import AdminWorkers from './pages/admin/Workers';
 import AdminServices from './pages/admin/Services';
 import AdminAppointments from './pages/admin/Appointments';
 import AdminSettings from './pages/admin/Settings';
+import AdminWorkersCalendar from './pages/admin/WorkersCalendar';
 
 // Worker pages
 import WorkerSchedule from './pages/worker/Schedule';
@@ -36,19 +41,11 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-function RoleRedirect() {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner /></div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin') return <Navigate to="/admin" replace />;
-  if (user.role === 'worker') return <Navigate to="/worker" replace />;
-  return <Navigate to="/customer" replace />;
-}
-
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<RoleRedirect />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/book/:slug" element={<PublicBooking />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
@@ -76,6 +73,11 @@ export default function App() {
       <Route path="/admin/settings" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <AdminLayout><AdminSettings /></AdminLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/workers-calendar" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminLayout><AdminWorkersCalendar /></AdminLayout>
         </ProtectedRoute>
       } />
 

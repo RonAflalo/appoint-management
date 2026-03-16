@@ -9,7 +9,9 @@ async function seed() {
   // Check if already seeded
   const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@demo.com');
   if (existingAdmin) {
-    console.log('Database already seeded. Skipping.');
+    // Update slug if missing
+    db.prepare("UPDATE businesses SET slug = 'davids-barbershop' WHERE slug IS NULL AND id = (SELECT business_id FROM users WHERE email = 'admin@demo.com')").run();
+    console.log('Database already seeded. Slug updated if missing. Skipping.');
     process.exit(0);
   }
 
@@ -17,8 +19,8 @@ async function seed() {
 
   // Create business
   const businessResult = db.prepare(`
-    INSERT INTO businesses (name, address, working_hours_json)
-    VALUES (?, ?, ?)
+    INSERT INTO businesses (name, address, working_hours_json, slug)
+    VALUES (?, ?, ?, ?)
   `).run(
     'סלון הספר של דוד',
     'רחוב הרצל 5, תל אביב',
@@ -30,7 +32,8 @@ async function seed() {
       "4": { "start": "09:00", "end": "18:00" },
       "5": { "start": "09:00", "end": "14:00" },
       "6": null
-    })
+    }),
+    'davids-barbershop'
   );
   const businessId = businessResult.lastInsertRowid;
   console.log(`Created business with ID: ${businessId}`);

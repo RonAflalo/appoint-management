@@ -7,6 +7,7 @@ import { logout } from '../../api/auth';
 const navItems = [
   { path: '/admin', label: 'דשבורד', icon: '🏠', exact: true },
   { path: '/admin/workers', label: 'עובדים', icon: '👥' },
+  { path: '/admin/workers-calendar', label: 'לוח עובדים', icon: '🗓' },
   { path: '/admin/services', label: 'שירותים', icon: '✂️' },
   { path: '/admin/appointments', label: 'תורים', icon: '📅' },
   { path: '/admin/settings', label: 'הגדרות', icon: '⚙️' },

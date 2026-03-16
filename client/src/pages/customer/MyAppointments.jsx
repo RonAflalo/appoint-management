@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMyAppointments, cancelAppointment } from '../../api/user';
+import { getMyAppointments, cancelAppointment, acceptReschedule } from '../../api/user';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatDateTime, isFuture } from '../../utils/dateUtils';
@@ -14,14 +14,14 @@ export default function CustomerMyAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [cancelling, setCancelling] = useState(null);
+  const [busy, setBusy] = useState(null);
   const { addToast } = useToast();
 
   const load = async () => {
     try {
       const data = await getMyAppointments();
       setAppointments(data.appointments || []);
-    } catch (e) {
+    } catch {
       addToast('שגיאה בטעינת התורים', 'error');
     } finally {
       setLoading(false);
@@ -30,8 +30,10 @@ export default function CustomerMyAppointments() {
 
   useEffect(() => { load(); }, []);
 
+  const upcomingStatuses = ['pending', 'confirmed', 'reschedule_requested'];
+
   const upcomingAppointments = appointments.filter(
-    a => isFuture(a.start_time) && ['pending', 'confirmed'].includes(a.status)
+    a => isFuture(a.start_time) && upcomingStatuses.includes(a.status)
   ).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
   const pastAppointments = appointments.filter(
@@ -40,23 +42,31 @@ export default function CustomerMyAppointments() {
 
   const displayedAppointments = activeTab === 'upcoming' ? upcomingAppointments : pastAppointments;
 
-  const handleCancel = async (id) => {
-    if (!confirm('האם אתה בטוח שברצונך לבטל את התור?')) return;
-    setCancelling(id);
+  const withBusy = async (id, fn, successMsg) => {
+    setBusy(id);
     try {
-      await cancelAppointment(id);
-      addToast('התור בוטל בהצלחה');
+      await fn();
+      addToast(successMsg);
       load();
     } catch (e) {
-      addToast(e.response?.data?.message || 'שגיאה בביטול התור', 'error');
+      addToast(e.response?.data?.message || 'שגיאה', 'error');
     } finally {
-      setCancelling(null);
+      setBusy(null);
     }
   };
 
-  const canCancel = (appt) => {
-    return isFuture(appt.start_time) && ['pending', 'confirmed'].includes(appt.status);
+  const handleCancel = (id) => {
+    if (!confirm('האם אתה בטוח שברצונך לבטל את התור?')) return;
+    withBusy(id, () => cancelAppointment(id), 'התור בוטל בהצלחה');
   };
+
+  const handleAcceptReschedule = (id) => {
+    if (!confirm('לאשר את המועד החדש שהוצע?')) return;
+    withBusy(id, () => acceptReschedule(id), 'המועד החדש אושר! ✅');
+  };
+
+  const canCancel = (appt) =>
+    isFuture(appt.start_time) && ['pending', 'confirmed', 'reschedule_requested'].includes(appt.status);
 
   return (
     <div>
@@ -75,7 +85,7 @@ export default function CustomerMyAppointments() {
               ${activeTab === tab.value ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600'}`}
           >
             {tab.label}
-            <span className={`mr-2 text-xs px-1.5 py-0.5 rounded-full
+            <span className={`me-2 text-xs px-1.5 py-0.5 rounded-full
               ${activeTab === tab.value ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
               {tab.value === 'upcoming' ? upcomingAppointments.length : pastAppointments.length}
             </span>
@@ -98,7 +108,9 @@ export default function CustomerMyAppointments() {
       ) : (
         <div className="space-y-4">
           {displayedAppointments.map(appt => (
-            <div key={appt.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <div key={appt.id} className={`bg-white rounded-xl shadow-sm border p-5 transition-colors
+              ${appt.status === 'reschedule_requested' ? 'border-orange-200' : 'border-gray-100'}`}>
+
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -130,14 +142,45 @@ export default function CustomerMyAppointments() {
                 </div>
               )}
 
-              {/* Cancel button */}
-              {canCancel(appt) && (
+              {/* Reschedule request banner */}
+              {appt.status === 'reschedule_requested' && appt.suggested_time && (
+                <div className="mb-4 bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <div className="font-semibold text-orange-800 mb-1">🔄 העובד מבקש לשנות את המועד</div>
+                  <div className="text-sm text-orange-700 mb-1">
+                    <span className="font-medium">מועד מוצע:</span> {formatDateTime(appt.suggested_time)}
+                  </div>
+                  {appt.reschedule_note && (
+                    <div className="text-sm text-orange-600 mb-3">
+                      <span className="font-medium">הערה:</span> {appt.reschedule_note}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAcceptReschedule(appt.id)}
+                      disabled={busy === appt.id}
+                      className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      {busy === appt.id ? '...' : '✓ אשר מועד חדש'}
+                    </button>
+                    <button
+                      onClick={() => handleCancel(appt.id)}
+                      disabled={busy === appt.id}
+                      className="flex-1 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      ✕ בטל תור
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Regular cancel button for non-reschedule statuses */}
+              {canCancel(appt) && appt.status !== 'reschedule_requested' && (
                 <button
                   onClick={() => handleCancel(appt.id)}
-                  disabled={cancelling === appt.id}
+                  disabled={busy === appt.id}
                   className="w-full py-2.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
                 >
-                  {cancelling === appt.id ? 'מבטל...' : 'בטל תור'}
+                  {busy === appt.id ? 'מבטל...' : 'בטל תור'}
                 </button>
               )}
             </div>
