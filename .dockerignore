@@ -1,0 +1,10 @@
+node_modules/
+client/node_modules/
+server/node_modules/
+client/dist/
+server/db/appointments.db
+server/db/appointments.db-shm
+server/db/appointments.db-wal
+server/.env
+.env
+.git/
