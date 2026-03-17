@@ -53,6 +53,7 @@ export default function PublicBooking() {
   const [guestEmail, setGuestEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [bookingError, setBookingError] = useState('');
+  const [coverFailed, setCoverFailed] = useState(false);
 
   useEffect(() => {
     getBusinessInfo(slug)
@@ -295,7 +296,6 @@ export default function PublicBooking() {
     );
   }
 
-  const [coverFailed, setCoverFailed] = useState(false);
   const hasCover = !!business?.cover_url && !coverFailed;
   const hasSocial = business?.phone || business?.instagram_url || business?.facebook_url;
 
@@ -304,7 +304,7 @@ export default function PublicBooking() {
       {/* Business hero header */}
       {hasCover ? (
         <div>
-          {/* Cover image */}
+          {/* Cover image with business name/logo overlaid */}
           <div className="relative w-full h-44 sm:h-56 overflow-hidden">
             <img
               src={business.cover_url}
@@ -312,25 +312,29 @@ export default function PublicBooking() {
               className="w-full h-full object-cover"
               onError={() => setCoverFailed(true)}
             />
-            <div className="absolute inset-0 bg-black/30" />
-          </div>
-          {/* Business info bar */}
-          <div className="bg-white shadow-sm border-b border-gray-100">
-            <div className="max-w-lg mx-auto px-4 py-4">
-              <div className="flex items-center gap-3">
-                {business.logo_url && (
-                  <img src={business.logo_url} alt={business.name} className="w-12 h-12 rounded-xl object-contain border border-gray-200 bg-white flex-shrink-0" onError={e => e.target.style.display='none'} />
-                )}
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-xl font-black text-gray-900 truncate">{business.name}</h1>
-                  {business.address && <p className="text-sm text-gray-400 truncate">{business.address}</p>}
-                  {business.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{business.description}</p>}
-                </div>
-                {hasSocial && <BusinessSocialLinks business={business} variant="dark" />}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 flex items-end gap-3">
+              {business.logo_url ? (
+                <img src={business.logo_url} alt={business.name} className="w-12 h-12 rounded-xl object-contain bg-white/20 p-1 flex-shrink-0" onError={e => e.target.style.display='none'} />
+              ) : (
+                <span className="text-3xl">📅</span>
+              )}
+              <div className="min-w-0">
+                <h1 className="text-xl font-black text-white leading-tight">{business.name}</h1>
+                {business.description && <p className="text-white/75 text-xs line-clamp-1 mt-0.5">{business.description}</p>}
               </div>
             </div>
+          </div>
+          {/* Social icons + address + CTA */}
+          <div className="bg-white shadow-sm border-b border-gray-100">
+            {(hasSocial || business.address) && (
+              <div className="max-w-lg mx-auto px-4 pt-4 pb-1 flex flex-col items-center gap-2">
+                {hasSocial && <BusinessSocialLinks business={business} variant="dark" />}
+                {business.address && <p className="text-sm text-gray-500 text-center">{business.address}</p>}
+              </div>
+            )}
             {step === 0 && (
-              <div className="px-4 pb-4 flex flex-col items-center gap-3">
+              <div className="px-4 py-4 flex flex-col items-center gap-3">
                 <button
                   onClick={() => setStep(1)}
                   className="w-full max-w-xs bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-colors shadow"
