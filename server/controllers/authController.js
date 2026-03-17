@@ -66,7 +66,14 @@ const register = (req, res) => {
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     sendVerificationEmail({ email, name, verifyUrl: `${clientUrl}/verify-email/${verificationToken}` });
 
-    return res.json({ success: true, message: 'נרשמת בהצלחה', user: { id: user.id, name: user.name, email: user.email, role: user.role, business_id: user.business_id, email_verified: user.email_verified } });
+    let business = null;
+    if (user.business_id) {
+      business = db.prepare(
+        'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address FROM businesses WHERE id = ?'
+      ).get(user.business_id);
+    }
+
+    return res.json({ success: true, message: 'נרשמת בהצלחה', user: { id: user.id, name: user.name, email: user.email, role: user.role, business_id: user.business_id, email_verified: user.email_verified, business } });
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);
@@ -82,11 +89,18 @@ const register = (req, res) => {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
   sendVerificationEmail({ email, name, verifyUrl: `${clientUrl}/verify-email/${verificationToken}` });
 
+  let business = null;
+  if (user.business_id) {
+    business = db.prepare(
+      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address FROM businesses WHERE id = ?'
+    ).get(user.business_id);
+  }
+
   res.cookie('token', token, COOKIE_OPTIONS);
   return res.status(201).json({
     success: true,
     message: 'נרשמת בהצלחה',
-    user: { id: user.id, name: user.name, email: user.email, role: user.role, business_id: user.business_id, email_verified: user.email_verified },
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, business_id: user.business_id, email_verified: user.email_verified, business },
   });
 };
 
@@ -114,10 +128,17 @@ const login = (req, res) => {
   const token = createToken(user);
   res.cookie('token', token, COOKIE_OPTIONS);
 
+  let business = null;
+  if (user.business_id) {
+    business = db.prepare(
+      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address FROM businesses WHERE id = ?'
+    ).get(user.business_id);
+  }
+
   return res.json({
     success: true,
     message: 'התחברת בהצלחה',
-    user: { id: user.id, name: user.name, email: user.email, role: user.role, business_id: user.business_id, email_verified: user.email_verified },
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, business_id: user.business_id, email_verified: user.email_verified, business },
   });
 };
 

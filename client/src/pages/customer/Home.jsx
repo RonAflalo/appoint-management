@@ -37,7 +37,20 @@ export default function CustomerHome() {
       )}
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 mb-6 text-white">
+      <div
+        className="rounded-2xl p-6 mb-6 text-white relative overflow-hidden"
+        style={user?.business?.cover_url ? {} : {}}
+      >
+        {user?.business?.cover_url && (
+          <img
+            src={user.business.cover_url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={e => e.target.style.display='none'}
+          />
+        )}
+        <div className={`absolute inset-0 ${user?.business?.cover_url ? 'bg-black/50' : 'bg-gradient-to-br from-indigo-600 to-purple-700'} rounded-2xl`} />
+        <div className="relative z-10">
         <h1 className="text-2xl font-bold mb-1">שלום, {user?.name}! 👋</h1>
         <p className="text-indigo-200 text-sm mb-5">{user?.business?.name ? `ברוך הבא ל${user.business.name}` : 'ברוך הבא'}</p>
 
@@ -60,6 +73,7 @@ export default function CustomerHome() {
         >
           📅 קבע תור חדש
         </button>
+        </div>
       </div>
 
       {/* Quick stats */}
