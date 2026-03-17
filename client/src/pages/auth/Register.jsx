@@ -4,6 +4,7 @@ import { register } from '../../api/auth';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { getBusinessInfo } from '../../api/public';
+import GoogleSignInButton from '../../components/common/GoogleSignInButton';
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
@@ -85,6 +86,18 @@ export default function Register() {
               {errors.general}
             </div>
           )}
+
+          {/* Google sign up */}
+          <GoogleSignInButton
+            href={`/api/auth/google${slug ? `?slug=${slug}` : ''}`}
+            label="הרשמה עם Google"
+          />
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">או עם אימייל וסיסמה</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

@@ -204,4 +204,145 @@ const resendVerification = (req, res) => {
   return res.json({ success: true, message: 'אימייל אימות נשלח מחדש' });
 };
 
-module.exports = { register, login, logout, getMe, forgotPassword, resetPassword, verifyEmail, resendVerification };
+// ---- Google OAuth ----
+
+const oauthStates = new Map(); // state -> { ts, slug, redirect }
+
+function cleanOldStates() {
+  const cutoff = Date.now() - 10 * 60 * 1000;
+  for (const [k, v] of oauthStates) {
+    if (v.ts < cutoff) oauthStates.delete(k);
+  }
+}
+
+const googleOAuth = (req, res) => {
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    return res.status(501).json({ success: false, message: 'Google OAuth not configured' });
+  }
+  cleanOldStates();
+  const { slug, redirect } = req.query;
+  const state = crypto.randomBytes(16).toString('hex');
+  oauthStates.set(state, { ts: Date.now(), slug: slug || null, redirect: redirect || null });
+
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI ||
+    `${process.env.CLIENT_URL || 'http://localhost:3001'}/api/auth/google/callback`;
+
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: 'email profile',
+    state,
+    access_type: 'online',
+  });
+
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+};
+
+const googleOAuthCallback = async (req, res) => {
+  const { code, state, error } = req.query;
+  const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
+  if (error || !code) {
+    return res.redirect(`${CLIENT_URL}/login?error=google_cancelled`);
+  }
+
+  const stateData = oauthStates.get(state);
+  if (!stateData) {
+    return res.redirect(`${CLIENT_URL}/login?error=invalid_state`);
+  }
+  oauthStates.delete(state);
+
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI ||
+    `${process.env.CLIENT_URL || 'http://localhost:3001'}/api/auth/google/callback`;
+
+  try {
+    // Exchange code for access token
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }).toString(),
+    });
+
+    const tokenData = await tokenRes.json();
+
+    if (!tokenData.access_token) {
+      console.error('Google token exchange failed:', tokenData);
+      return res.redirect(`${CLIENT_URL}/login?error=google_failed`);
+    }
+
+    // Get user info from Google
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const googleUser = await userRes.json();
+
+    if (!googleUser.email) {
+      return res.redirect(`${CLIENT_URL}/login?error=google_no_email`);
+    }
+
+    const db = getDb();
+    let user = db.prepare('SELECT * FROM users WHERE email = ?').get(googleUser.email);
+
+    if (!user) {
+      // New user — create account (email already verified via Google)
+      const dummyHash = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 4);
+      let businessId = null;
+      if (stateData.slug) {
+        const biz = db.prepare('SELECT id FROM businesses WHERE slug = ?').get(stateData.slug);
+        if (biz) businessId = biz.id;
+      }
+      const result = db.prepare(`
+        INSERT INTO users (name, email, password_hash, role, business_id, email_verified)
+        VALUES (?, ?, ?, 'user', ?, 1)
+      `).run(googleUser.name || googleUser.email.split('@')[0], googleUser.email, dummyHash, businessId);
+      user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+    } else {
+      // Existing user — update if needed
+      const updates = {};
+      if (!user.email_verified) updates.email_verified = 1;
+      if (stateData.slug && !user.business_id) {
+        const biz = db.prepare('SELECT id FROM businesses WHERE slug = ?').get(stateData.slug);
+        if (biz) updates.business_id = biz.id;
+      }
+      if (Object.keys(updates).length > 0) {
+        const setClauses = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+        db.prepare(`UPDATE users SET ${setClauses} WHERE id = ?`).run(...Object.values(updates), user.id);
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+      }
+    }
+
+    if (!user.is_active) {
+      return res.redirect(`${CLIENT_URL}/login?error=account_disabled`);
+    }
+
+    const token = createToken(user);
+    res.cookie('token', token, COOKIE_OPTIONS);
+
+    let redirectPath;
+    if (stateData.redirect) {
+      redirectPath = stateData.redirect;
+    } else if (stateData.slug) {
+      redirectPath = `/book/${stateData.slug}`;
+    } else if (user.role === 'admin') {
+      redirectPath = '/admin';
+    } else if (user.role === 'worker') {
+      redirectPath = '/worker';
+    } else {
+      redirectPath = '/customer';
+    }
+
+    res.redirect(`${CLIENT_URL}${redirectPath}`);
+  } catch (err) {
+    console.error('Google OAuth error:', err);
+    res.redirect(`${CLIENT_URL}/login?error=google_failed`);
+  }
+};
+
+module.exports = { register, login, logout, getMe, forgotPassword, resetPassword, verifyEmail, resendVerification, googleOAuth, googleOAuthCallback };

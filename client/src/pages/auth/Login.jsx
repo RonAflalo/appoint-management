@@ -3,6 +3,15 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import GoogleSignInButton from '../../components/common/GoogleSignInButton';
+
+const OAUTH_ERRORS = {
+  google_cancelled: 'הכניסה עם Google בוטלה',
+  google_failed: 'שגיאה בכניסה עם Google, נסה שנית',
+  google_no_email: 'לא ניתן לקבל אימייל מ-Google',
+  invalid_state: 'שגיאת אבטחה, נסה שנית',
+  account_disabled: 'החשבון אינו פעיל',
+};
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -14,6 +23,9 @@ export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect');
+  const oauthError = OAUTH_ERRORS[searchParams.get('error')] || null;
+
+  const googleHref = `/api/auth/google${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,11 +65,20 @@ export default function Login() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          {error && (
+          {(error || oauthError) && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
+              {error || oauthError}
             </div>
           )}
+
+          {/* Google sign in */}
+          <GoogleSignInButton href={googleHref} />
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">או עם אימייל וסיסמה</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
