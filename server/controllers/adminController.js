@@ -268,7 +268,7 @@ const getSettings = (req, res) => {
 };
 
 const updateSettings = (req, res) => {
-  const { name, address, working_hours, description, logo_url } = req.body;
+  const { name, address, working_hours, description, logo_url, phone } = req.body;
   const db = getDb();
   const business = db.prepare('SELECT id FROM businesses WHERE id = ?').get(req.user.business_id);
   if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
@@ -281,9 +281,10 @@ const updateSettings = (req, res) => {
       address = COALESCE(?, address),
       working_hours_json = COALESCE(?, working_hours_json),
       description = COALESCE(?, description),
-      logo_url = COALESCE(?, logo_url)
+      logo_url = COALESCE(?, logo_url),
+      phone = COALESCE(?, phone)
     WHERE id = ?
-  `).run(name ?? null, address ?? null, workingHoursJson, description ?? null, logo_url ?? null, req.user.business_id);
+  `).run(name ?? null, address ?? null, workingHoursJson, description ?? null, logo_url ?? null, phone ?? null, req.user.business_id);
 
   const updated = db.prepare('SELECT * FROM businesses WHERE id = ?').get(req.user.business_id);
   updated.working_hours = JSON.parse(updated.working_hours_json);
@@ -296,7 +297,7 @@ const getCustomers = (req, res) => {
   const db = getDb();
   const customers = db.prepare(`
     SELECT
-      u.id, u.name, u.email, u.created_at, u.email_verified,
+      u.id, u.name, u.email, u.phone, u.created_at, u.email_verified,
       COUNT(a.id) AS appointment_count,
       MAX(a.start_time) AS last_appointment
     FROM users u

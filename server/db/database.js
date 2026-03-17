@@ -103,6 +103,10 @@ function initializeDatabase(overridePath) {
   // Migrate: reminder tracking
   try { db.exec("ALTER TABLE appointments ADD COLUMN reminder_sent INTEGER NOT NULL DEFAULT 0"); } catch (_) {}
 
+  // Migrate: phone numbers
+  try { db.exec("ALTER TABLE users ADD COLUMN phone TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE businesses ADD COLUMN phone TEXT"); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

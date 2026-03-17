@@ -47,7 +47,7 @@ const checkSlug = (req, res) => {
 };
 
 const registerBusiness = (req, res) => {
-  const { businessName, businessType, ownerName, email, password, slug } = req.body;
+  const { businessName, businessType, ownerName, email, password, slug, phone } = req.body;
 
   if (!businessName || !businessType || !ownerName || !email || !password || !slug) {
     return res.status(400).json({ success: false, message: 'יש למלא את כל השדות' });
@@ -77,16 +77,16 @@ const registerBusiness = (req, res) => {
 
   const transaction = db.transaction(() => {
     const businessResult = db.prepare(`
-      INSERT INTO businesses (name, slug, working_hours_json, onboarding_complete)
-      VALUES (?, ?, ?, 0)
-    `).run(businessName, slug, DEFAULT_WORKING_HOURS);
+      INSERT INTO businesses (name, slug, working_hours_json, onboarding_complete, phone)
+      VALUES (?, ?, ?, 0, ?)
+    `).run(businessName, slug, DEFAULT_WORKING_HOURS, phone || null);
     const businessId = businessResult.lastInsertRowid;
 
     const passwordHash = bcrypt.hashSync(password, 10);
     const userResult = db.prepare(`
-      INSERT INTO users (name, email, password_hash, role, business_id, is_worker)
-      VALUES (?, ?, ?, 'admin', ?, 1)
-    `).run(ownerName, email, passwordHash, businessId);
+      INSERT INTO users (name, email, password_hash, role, business_id, is_worker, phone)
+      VALUES (?, ?, ?, 'admin', ?, 1, ?)
+    `).run(ownerName, email, passwordHash, businessId, phone || null);
     const userId = userResult.lastInsertRowid;
 
     for (const svc of services) {

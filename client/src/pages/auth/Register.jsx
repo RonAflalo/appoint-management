@@ -6,7 +6,7 @@ import { useToast } from '../../hooks/useToast';
 import { getBusinessInfo } from '../../api/public';
 
 export default function Register() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [businessName, setBusinessName] = useState(null);
@@ -50,7 +50,7 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      const data = await register({ name: form.name, email: form.email, password: form.password, slug: slug || undefined });
+      const data = await register({ name: form.name, email: form.email, phone: form.phone || undefined, password: form.password, slug: slug || undefined });
       setUser(data.user);
       addToast('נרשמת בהצלחה!');
       if (slug) navigate(`/book/${slug}`);
@@ -114,6 +114,19 @@ export default function Register() {
                 dir="ltr"
               />
               {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">מספר טלפון <span className="text-gray-400 font-normal">(אופציונלי)</span></label>
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="050-0000000"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
+                dir="ltr"
+              />
             </div>
 
             <div>

@@ -27,7 +27,7 @@ function createToken(user) {
 }
 
 const register = (req, res) => {
-  const { name, email, password, slug } = req.body;
+  const { name, email, password, slug, phone } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: 'יש למלא את כל השדות' });
   }
@@ -56,9 +56,9 @@ const register = (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     db.prepare(`
       UPDATE users SET name = ?, password_hash = ?, business_id = COALESCE(?, business_id),
-        email_verified = 0, verification_token = ?
+        email_verified = 0, verification_token = ?, phone = COALESCE(?, phone)
       WHERE id = ?
-    `).run(name, passwordHash, businessId, verificationToken, existing.id);
+    `).run(name, passwordHash, businessId, verificationToken, phone || null, existing.id);
     const user = db.prepare('SELECT id, name, email, role, business_id, email_verified FROM users WHERE id = ?').get(existing.id);
     const token = createToken(user);
     res.cookie('token', token, COOKIE_OPTIONS);
@@ -72,9 +72,9 @@ const register = (req, res) => {
   const passwordHash = bcrypt.hashSync(password, 10);
   const verificationToken = crypto.randomBytes(32).toString('hex');
   const result = db.prepare(`
-    INSERT INTO users (name, email, password_hash, role, business_id, email_verified, verification_token)
-    VALUES (?, ?, ?, 'user', ?, 0, ?)
-  `).run(name, email, passwordHash, businessId, verificationToken);
+    INSERT INTO users (name, email, password_hash, role, business_id, email_verified, verification_token, phone)
+    VALUES (?, ?, ?, 'user', ?, 0, ?, ?)
+  `).run(name, email, passwordHash, businessId, verificationToken, phone || null);
 
   const user = db.prepare('SELECT id, name, email, role, business_id, email_verified FROM users WHERE id = ?').get(result.lastInsertRowid);
   const token = createToken(user);

@@ -54,8 +54,9 @@ export default function AdminCustomers() {
                 <tr className="bg-gray-50 text-gray-600 text-xs uppercase">
                   <th className="px-4 py-3 text-right font-medium">שם</th>
                   <th className="px-4 py-3 text-right font-medium">אימייל</th>
+                  <th className="px-4 py-3 text-right font-medium hidden md:table-cell">טלפון</th>
                   <th className="px-4 py-3 text-right font-medium">תורים</th>
-                  <th className="px-4 py-3 text-right font-medium">תור אחרון</th>
+                  <th className="px-4 py-3 text-right font-medium hidden sm:table-cell">תור אחרון</th>
                   <th className="px-4 py-3 text-right font-medium">אימות</th>
                 </tr>
               </thead>
@@ -64,8 +65,9 @@ export default function AdminCustomers() {
                   <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                     <td className="px-4 py-3 text-gray-600 text-xs" dir="ltr">{c.email}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell" dir="ltr">{c.phone || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{c.appointment_count}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">
                       {c.last_appointment ? formatDateTime(c.last_appointment) : '—'}
                     </td>
                     <td className="px-4 py-3">

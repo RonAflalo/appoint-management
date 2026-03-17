@@ -32,6 +32,7 @@ export default function Landing() {
     businessType: 'barber',
     ownerName: '',
     email: '',
+    phone: '',
     password: '',
     slug: '',
   });
@@ -344,6 +345,19 @@ export default function Landing() {
                 placeholder="david@example.com"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">מספר טלפון <span className="text-gray-400 font-normal">(אופציונלי)</span></label>
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="050-0000000"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                dir="ltr"
               />
             </div>
 
