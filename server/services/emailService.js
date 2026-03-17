@@ -1,55 +1,51 @@
-const nodemailer = require('nodemailer');
-
-// ─── Transport ────────────────────────────────────────────────────────────────
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 function isConfigured() {
-  return !!(process.env.SMTP_USER && process.env.SMTP_PASS &&
-            process.env.SMTP_USER !== 'your-email@example.com');
+  return !!process.env.BREVO_API_KEY;
 }
 
-function createTransport() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+function parsFrom() {
+  const raw = process.env.EMAIL_FROM || '';
+  const match = raw.match(/^(.*?)\s*<(.+)>$/);
+  if (match) return { name: match[1].trim(), email: match[2].trim() };
+  return { name: 'תוריי', email: raw || 'noreply@example.com' };
 }
 
-function getFrom() {
-  return process.env.EMAIL_FROM || `תוריי <${process.env.SMTP_USER}>`;
-}
-
-// Called once at startup
 async function verifyEmailConnection() {
   if (!isConfigured()) {
-    console.log('[Email] ⚠️  SMTP credentials not configured — emails disabled.');
-    console.log('[Email]     Set SMTP_USER and SMTP_PASS in .env (sign up free at brevo.com)');
+    console.log('[Email] ⚠️  BREVO_API_KEY not set — emails disabled.');
     return;
   }
-  try {
-    const transporter = createTransport();
-    await transporter.verify();
-    console.log('[Email] ✅ SMTP connected — emails enabled.');
-  } catch (err) {
-    console.error('[Email] ❌ SMTP connection failed:', err.message);
-  }
+  console.log('[Email] ✅ Brevo API configured — emails enabled.');
 }
-
-// ─── Core send ────────────────────────────────────────────────────────────────
 
 async function sendEmail(to, subject, html) {
   if (!isConfigured()) {
     console.log(`[Email] ⚠️  Skipped (not configured) | To: ${to} | Subject: ${subject}`);
     return;
   }
+  const sender = parsFrom();
   try {
-    const transporter = createTransport();
-    const info = await transporter.sendMail({ from: getFrom(), to, subject, html });
-    console.log(`[Email] ✅ Sent | To: ${to} | Subject: ${subject} | Id: ${info.messageId}`);
+    const res = await fetch(BREVO_API_URL, {
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender,
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`[Email] ❌ Failed | To: ${to} | Subject: ${subject} | ${res.status}: ${err}`);
+    } else {
+      const data = await res.json();
+      console.log(`[Email] ✅ Sent | To: ${to} | Subject: ${subject} | Id: ${data.messageId}`);
+    }
   } catch (err) {
     console.error(`[Email] ❌ Failed | To: ${to} | Subject: ${subject} |`, err.message);
   }
