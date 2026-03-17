@@ -355,40 +355,43 @@ export default function PublicBooking() {
           </div>
         </div>
       ) : (
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
-          {business?.logo_url ? (
-            <img src={business.logo_url} alt={business.name} className="w-16 h-16 object-contain rounded-xl mx-auto mb-3 bg-white/10 p-1" onError={e => e.target.style.display='none'} />
-          ) : (
-            <div className="text-4xl mb-3">📅</div>
-          )}
-          <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
-          {business?.address && <p className="text-indigo-200 text-sm">{business.address}</p>}
-          {business?.description && <p className="text-indigo-100 text-sm mt-1 max-w-md mx-auto">{business.description}</p>}
-          {hasSocial && (
-            <div className="flex justify-center mt-3">
-              <BusinessSocialLinks business={business} variant="light" />
-            </div>
-          )}
-          {step === 0 && (
-            <div className="mt-4 flex flex-col items-center gap-3">
-              <button
-                onClick={() => setStep(1)}
-                className="bg-white text-indigo-700 font-bold px-8 py-3 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg"
-              >
-                קבע תור עכשיו
-              </button>
-              {isCustomer ? (
-                <p className="text-indigo-200 text-sm">שלום, {user.name} 👋</p>
-              ) : (
-                <p className="text-indigo-200 text-sm">
-                  <Link to={`/login?redirect=/book/${slug}`} className="underline font-medium text-white hover:text-indigo-100">כניסה</Link>
-                  {' '}/{' '}
-                  <Link to={`/register?slug=${slug}`} className="underline font-medium text-white hover:text-indigo-100">הרשמה</Link>
-                  {' '}לחוויה מהירה יותר
-                </p>
-              )}
-            </div>
-          )}
+        <div>
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
+            {business?.logo_url ? (
+              <img src={business.logo_url} alt={business.name} className="w-16 h-16 object-contain rounded-xl mx-auto mb-3 bg-white/10 p-1" onError={e => e.target.style.display='none'} />
+            ) : (
+              <div className="text-4xl mb-3">📅</div>
+            )}
+            <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
+            {business?.description && <p className="text-indigo-100 text-sm mt-1 max-w-md mx-auto">{business.description}</p>}
+          </div>
+          <div className="bg-white shadow-sm border-b border-gray-100">
+            {hasSocial && (
+              <div className="max-w-lg mx-auto px-4 pt-4 pb-1 flex justify-center">
+                <BusinessSocialLinks business={business} variant="dark" />
+              </div>
+            )}
+            {step === 0 && (
+              <div className="px-4 py-4 flex flex-col items-center gap-3">
+                <button
+                  onClick={() => setStep(1)}
+                  className="w-full max-w-xs bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-colors shadow"
+                >
+                  קבע תור עכשיו
+                </button>
+                {isCustomer ? (
+                  <p className="text-gray-400 text-sm">שלום, {user.name} 👋</p>
+                ) : (
+                  <p className="text-gray-400 text-sm">
+                    <Link to={`/login?redirect=/book/${slug}`} className="underline font-medium text-indigo-600">כניסה</Link>
+                    {' '}/{' '}
+                    <Link to={`/register?slug=${slug}`} className="underline font-medium text-indigo-600">הרשמה</Link>
+                    {' '}לחוויה מהירה יותר
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
