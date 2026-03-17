@@ -11,6 +11,7 @@ const OAUTH_ERRORS = {
   google_no_email: 'לא ניתן לקבל אימייל מ-Google',
   invalid_state: 'שגיאת אבטחה, נסה שנית',
   account_disabled: 'החשבון אינו פעיל',
+  no_business: 'יש להירשם דרך הקישור של העסק',
 };
 
 export default function Login() {

@@ -312,6 +312,10 @@ const googleOAuthCallback = async (req, res) => {
     let user = db.prepare('SELECT * FROM users WHERE email = ?').get(googleUser.email);
 
     if (!user) {
+      // Block new customer creation without a business link
+      if (!stateData.slug) {
+        return res.redirect(`${CLIENT_URL}/login?error=no_business`);
+      }
       // New user — create account (email already verified via Google)
       const dummyHash = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 4);
       let businessId = null;
