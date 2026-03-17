@@ -5,10 +5,10 @@ function isConfigured() {
 }
 
 function parsFrom() {
-  const raw = process.env.EMAIL_FROM || '';
-  const match = raw.match(/^(.*?)\s*<(.+)>$/);
-  if (match) return { name: match[1].trim(), email: match[2].trim() };
-  return { name: 'תוריי', email: raw || 'noreply@example.com' };
+  const raw = (process.env.EMAIL_FROM || '').trim();
+  const match = raw.match(/^(.*?)\s*<(.+)>\s*$/);
+  if (match) return { name: match[1].trim() || 'Torii', email: match[2].trim() };
+  return { name: 'Torii', email: raw || 'noreply@example.com' };
 }
 
 async function verifyEmailConnection() {
