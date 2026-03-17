@@ -229,6 +229,20 @@ const acceptReschedule = (req, res) => {
   const newStartStr = newStart.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
   const newEndStr = newEnd.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
 
+  // Verify the suggested time is still available (no new conflicts)
+  const conflict = db.prepare(`
+    SELECT id FROM appointments
+    WHERE worker_id = ?
+      AND id != ?
+      AND status IN ('pending', 'confirmed')
+      AND start_time < ?
+      AND end_time > ?
+  `).get(appt.worker_id, appt.id, newEndStr, newStartStr);
+
+  if (conflict) {
+    return res.status(409).json({ success: false, message: 'הזמן המוצע כבר תפוס, צור קשר עם העסק' });
+  }
+
   db.prepare(`
     UPDATE appointments
     SET status = 'confirmed', start_time = ?, end_time = ?, suggested_time = NULL, reschedule_note = NULL

@@ -1,12 +1,16 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'appointments.db');
+const DEFAULT_DB_PATH = path.join(__dirname, 'appointments.db');
 
 let db;
 
-function initializeDatabase() {
-  db = new Database(DB_PATH);
+function initializeDatabase(overridePath) {
+  if (db) {
+    try { db.close(); } catch (_) {}
+  }
+  const dbPath = overridePath || process.env.DB_PATH || DEFAULT_DB_PATH;
+  db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
@@ -94,4 +98,11 @@ function getDb() {
   return db;
 }
 
-module.exports = { initializeDatabase, getDb };
+function closeDatabase() {
+  if (db) {
+    try { db.close(); } catch (_) {}
+    db = null;
+  }
+}
+
+module.exports = { initializeDatabase, getDb, closeDatabase };
