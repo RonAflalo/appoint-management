@@ -7,6 +7,21 @@ import BusinessSocialLinks from '../../components/common/BusinessSocialLinks';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDateTime, isFuture } from '../../utils/dateUtils';
 
+function buildCalendarUrl(appt, businessName, address) {
+  const start = new Date(appt.start_time);
+  const end = new Date(start.getTime() + (appt.duration_minutes || 60) * 60000);
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `תור ל-${appt.service_name} ב-${businessName || ''}`,
+    dates: `${fmt(start)}/${fmt(end)}`,
+    details: `עובד: ${appt.worker_name || ''}`,
+    location: address || '',
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 export default function CustomerHome() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +75,17 @@ export default function CustomerHome() {
             <p className="font-semibold text-lg">{nextAppointment.service_name}</p>
             <p className="text-indigo-200 text-sm">עם {nextAppointment.worker_name}</p>
             <p className="text-white font-medium mt-1">{formatDateTime(nextAppointment.start_time)}</p>
+            <a
+              href={buildCalendarUrl(nextAppointment, user?.business?.name, user?.business?.address)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex items-center justify-center gap-2 w-full py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-medium transition-colors"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+              </svg>
+              הוסף ליומן Google
+            </a>
           </div>
         ) : null}
 
