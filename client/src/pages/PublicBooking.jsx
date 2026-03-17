@@ -327,10 +327,9 @@ export default function PublicBooking() {
           </div>
           {/* Social icons + address + CTA */}
           <div className="bg-white shadow-sm border-b border-gray-100">
-            {(hasSocial || business.address) && (
-              <div className="max-w-lg mx-auto px-4 pt-4 pb-1 flex flex-col items-center gap-2">
-                {hasSocial && <BusinessSocialLinks business={business} variant="dark" />}
-                {business.address && <p className="text-sm text-gray-500 text-center">{business.address}</p>}
+            {hasSocial && (
+              <div className="max-w-lg mx-auto px-4 pt-4 pb-1 flex justify-center">
+                <BusinessSocialLinks business={business} variant="dark" />
               </div>
             )}
             {step === 0 && (
