@@ -25,7 +25,6 @@ async function sendEmail(to, subject, html) {
     return;
   }
   const sender = parsFrom();
-  console.log(`[Email] Sender resolved:`, JSON.stringify(sender));
   try {
     const res = await fetch(BREVO_API_URL, {
       method: 'POST',
@@ -146,6 +145,20 @@ async function sendNewBookingToWorker({ workerEmail, workerName, customerName, s
   );
 }
 
+async function sendAppointmentCancelledByCustomer({ workerEmail, workerName, customerName, serviceName, dateTime }) {
+  await sendEmail(
+    workerEmail,
+    '❌ לקוח ביטל את התור',
+    wrap('ביטול תור על ידי הלקוח', `
+      <p style="color:#374151;margin-bottom:16px">שלום ${workerName},<br>הלקוח ${customerName} ביטל את התור הבא:</p>
+      ${detailsTable({ customerName, workerName, serviceName, dateTime })}
+      <div style="margin-top:20px;padding:12px 16px;background:#fef2f2;border-radius:8px;color:#991b1b;font-size:13px">
+        ❌ התור בוטל על ידי הלקוח
+      </div>
+    `)
+  );
+}
+
 async function sendRescheduleAcceptedToWorker({ workerEmail, workerName, customerName, serviceName, dateTime }) {
   await sendEmail(
     workerEmail,
@@ -164,6 +177,7 @@ module.exports = {
   verifyEmailConnection,
   sendAppointmentConfirmed,
   sendAppointmentCancelled,
+  sendAppointmentCancelledByCustomer,
   sendRescheduleRequest,
   sendNewBookingToWorker,
   sendRescheduleAcceptedToWorker,

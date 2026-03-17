@@ -253,12 +253,24 @@ export default function PublicBooking() {
         <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
         {business?.address && <p className="text-indigo-200 text-sm mb-4">{business.address}</p>}
         {step === 0 && (
-          <button
-            onClick={() => setStep(1)}
-            className="mt-2 bg-white text-indigo-700 font-bold px-8 py-3 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg"
-          >
-            קבע תור עכשיו
-          </button>
+          <div className="mt-4 flex flex-col items-center gap-3">
+            <button
+              onClick={() => setStep(1)}
+              className="bg-white text-indigo-700 font-bold px-8 py-3 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg"
+            >
+              קבע תור עכשיו
+            </button>
+            {isCustomer ? (
+              <p className="text-indigo-200 text-sm">שלום, {user.name} 👋</p>
+            ) : (
+              <p className="text-indigo-200 text-sm">
+                <Link to={`/login?redirect=/book/${slug}`} className="underline font-medium text-white hover:text-indigo-100">כניסה</Link>
+                {' '}/{' '}
+                <Link to={`/register?slug=${slug}`} className="underline font-medium text-white hover:text-indigo-100">הרשמה</Link>
+                {' '}לחוויה מהירה יותר
+              </p>
+            )}
+          </div>
         )}
       </div>
 

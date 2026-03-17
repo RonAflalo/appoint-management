@@ -1,6 +1,6 @@
 const { getDb } = require('../db/database');
 const { getAvailableSlots } = require('../utils/slots');
-const { sendNewBookingToWorker, sendAppointmentConfirmed, sendRescheduleAcceptedToWorker } = require('../services/emailService');
+const { sendNewBookingToWorker, sendAppointmentConfirmed, sendRescheduleAcceptedToWorker, sendAppointmentCancelledByCustomer } = require('../services/emailService');
 const { formatDateTime } = require('../utils/dateFormat');
 
 const getServices = (req, res) => {
@@ -170,8 +170,15 @@ const cancelAppointment = (req, res) => {
   const { id } = req.params;
   const db = getDb();
   const appt = db.prepare(`
-    SELECT id, status FROM appointments
-    WHERE id = ? AND customer_id = ?
+    SELECT a.id, a.status, a.start_time,
+           c.name AS customer_name,
+           w.name AS worker_name, w.email AS worker_email,
+           s.name AS service_name
+    FROM appointments a
+    JOIN users c ON a.customer_id = c.id
+    JOIN users w ON a.worker_id = w.id
+    JOIN services s ON a.service_id = s.id
+    WHERE a.id = ? AND a.customer_id = ?
   `).get(id, req.user.id);
 
   if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
@@ -180,6 +187,15 @@ const cancelAppointment = (req, res) => {
   }
 
   db.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?").run(id);
+
+  sendAppointmentCancelledByCustomer({
+    workerEmail: appt.worker_email,
+    workerName: appt.worker_name,
+    customerName: appt.customer_name,
+    serviceName: appt.service_name,
+    dateTime: formatDateTime(appt.start_time),
+  });
+
   res.json({ success: true, message: 'התור בוטל בהצלחה' });
 };
 
