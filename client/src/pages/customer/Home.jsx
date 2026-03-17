@@ -61,11 +61,7 @@ export default function CustomerHome() {
             <p className="text-indigo-200 text-sm">עם {nextAppointment.worker_name}</p>
             <p className="text-white font-medium mt-1">{formatDateTime(nextAppointment.start_time)}</p>
           </div>
-        ) : (
-          <div className="bg-white/10 rounded-xl p-4 mb-4">
-            <p className="text-indigo-200 text-sm">אין לך תורים קרובים</p>
-          </div>
-        )}
+        ) : null}
 
         <button
           onClick={() => navigate('/customer/book')}
