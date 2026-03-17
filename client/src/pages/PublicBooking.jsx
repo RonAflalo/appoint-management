@@ -295,7 +295,8 @@ export default function PublicBooking() {
     );
   }
 
-  const hasCover = !!business?.cover_url;
+  const [coverFailed, setCoverFailed] = useState(false);
+  const hasCover = !!business?.cover_url && !coverFailed;
   const hasSocial = business?.phone || business?.instagram_url || business?.facebook_url;
 
   return (
@@ -309,6 +310,7 @@ export default function PublicBooking() {
               src={business.cover_url}
               alt={business.name}
               className="w-full h-full object-cover"
+              onError={() => setCoverFailed(true)}
             />
             <div className="absolute inset-0 bg-black/30" />
           </div>
