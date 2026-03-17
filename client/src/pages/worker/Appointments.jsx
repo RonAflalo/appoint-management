@@ -25,9 +25,12 @@ export default function WorkerAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('');
-  const [busy, setBusy] = useState(null); // id of the appointment being mutated
+  const [busy, setBusy] = useState(null);
 
-  // Reschedule modal state
+  // Detail modal
+  const [detailAppt, setDetailAppt] = useState(null);
+
+  // Reschedule modal
   const [rescheduleModal, setRescheduleModal] = useState(false);
   const [rescheduleAppt, setRescheduleAppt] = useState(null);
   const [suggestedDate, setSuggestedDate] = useState('');
@@ -54,6 +57,8 @@ export default function WorkerAppointments() {
     try {
       await fn();
       addToast(successMsg);
+      // Close detail modal if it was for this appointment
+      setDetailAppt(prev => prev?.id === id ? null : prev);
       load(activeTab);
     } catch (e) {
       addToast(e.response?.data?.message || 'שגיאה', 'error');
@@ -73,7 +78,8 @@ export default function WorkerAppointments() {
   const handleComplete = (id) =>
     withBusy(id, () => updateWorkerAppointmentStatus(id, 'completed'), 'התור סומן כהושלם');
 
-  const openRescheduleModal = (appt) => {
+  const openRescheduleModal = (appt, e) => {
+    e?.stopPropagation();
     setRescheduleAppt(appt);
     setSuggestedDate('');
     setSuggestedTime('');
@@ -103,6 +109,63 @@ export default function WorkerAppointments() {
       setSubmittingReschedule(false);
     }
   };
+
+  const ActionButtons = ({ appt }) => (
+    <div className="flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
+      {appt.status === 'pending' && (
+        <>
+          <button
+            onClick={() => handleApprove(appt.id)}
+            disabled={busy === appt.id}
+            className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            {busy === appt.id ? '...' : 'אשר'}
+          </button>
+          <button
+            onClick={() => handleCancel(appt.id)}
+            disabled={busy === appt.id}
+            className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            בטל
+          </button>
+        </>
+      )}
+      {appt.status === 'confirmed' && (
+        <>
+          <button
+            onClick={() => handleComplete(appt.id)}
+            disabled={busy === appt.id}
+            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            הושלם
+          </button>
+          <button
+            onClick={(e) => openRescheduleModal(appt, e)}
+            disabled={busy === appt.id}
+            className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            שנה מועד
+          </button>
+          <button
+            onClick={() => handleCancel(appt.id)}
+            disabled={busy === appt.id}
+            className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            בטל
+          </button>
+        </>
+      )}
+      {appt.status === 'reschedule_requested' && (
+        <button
+          onClick={() => handleCancel(appt.id)}
+          disabled={busy === appt.id}
+          className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          בטל תור
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div>
@@ -136,113 +199,118 @@ export default function WorkerAppointments() {
           <p className="text-gray-500 text-sm">לא נמצאו תורים בקטגוריה זו</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {appointments.map(appt => (
-            <div key={appt.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="font-semibold text-gray-900 text-lg">{appt.customer_name}</div>
-                  <div className="text-gray-500 text-sm">{appt.customer_email}</div>
-                </div>
-                <StatusBadge status={appt.status} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span>✂️</span>
-                  <span>{appt.service_name}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span>💰</span>
-                  <span>₪{appt.price}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600 col-span-2">
-                  <span>📅</span>
-                  <span>{formatDateTime(appt.start_time)}</span>
-                </div>
-              </div>
-
-              {appt.notes && (
-                <div className="mb-3 text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
-                  הערה: {appt.notes}
-                </div>
-              )}
-
-              {/* Reschedule info banner */}
-              {appt.status === 'reschedule_requested' && appt.suggested_time && (
-                <div className="mb-3 bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm">
-                  <div className="font-medium text-orange-800 mb-1">⏰ בקשת שינוי מועד נשלחה ללקוח</div>
-                  <div className="text-orange-700">זמן מוצע: {formatDateTime(appt.suggested_time)}</div>
-                  {appt.reschedule_note && (
-                    <div className="text-orange-600 text-xs mt-1">הערה: {appt.reschedule_note}</div>
-                  )}
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="flex flex-wrap gap-2">
-                {/* PENDING: approve + cancel */}
-                {appt.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => handleApprove(appt.id)}
-                      disabled={busy === appt.id}
-                      className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                    >
-                      {busy === appt.id ? '...' : '✓ אשר תור'}
-                    </button>
-                    <button
-                      onClick={() => handleCancel(appt.id)}
-                      disabled={busy === appt.id}
-                      className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                    >
-                      ✕ בטל
-                    </button>
-                  </>
-                )}
-
-                {/* CONFIRMED: complete + reschedule request + cancel */}
-                {appt.status === 'confirmed' && (
-                  <>
-                    <button
-                      onClick={() => handleComplete(appt.id)}
-                      disabled={busy === appt.id}
-                      className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                    >
-                      ✓ סמן כהושלם
-                    </button>
-                    <button
-                      onClick={() => openRescheduleModal(appt)}
-                      disabled={busy === appt.id}
-                      className="flex-1 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                    >
-                      🔄 בקש שינוי מועד
-                    </button>
-                    <button
-                      onClick={() => handleCancel(appt.id)}
-                      disabled={busy === appt.id}
-                      className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                    >
-                      ✕ בטל
-                    </button>
-                  </>
-                )}
-
-                {/* RESCHEDULE_REQUESTED: cancel only (waiting for customer) */}
-                {appt.status === 'reschedule_requested' && (
-                  <button
-                    onClick={() => handleCancel(appt.id)}
-                    disabled={busy === appt.id}
-                    className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                  >
-                    ✕ בטל תור
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-4 py-3 text-right font-medium text-gray-600">לקוח</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">תאריך ושעה</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">פעולות</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {appointments.map(appt => (
+                <tr
+                  key={appt.id}
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => setDetailAppt(appt)}
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">{appt.customer_name}</span>
+                      <StatusBadge status={appt.status} />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-sm">
+                    {formatDateTime(appt.start_time)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <ActionButtons appt={appt} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
+
+      {/* Detail Modal */}
+      <Modal
+        isOpen={!!detailAppt}
+        onClose={() => setDetailAppt(null)}
+        title="פרטי תור"
+      >
+        {detailAppt && (
+          <div className="space-y-4">
+            {/* Status */}
+            <div className="flex items-center justify-between">
+              <StatusBadge status={detailAppt.status} />
+              {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
+                <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">
+                  מוצע: {formatDateTime(detailAppt.suggested_time)}
+                </span>
+              )}
+            </div>
+
+            {/* Customer */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
+              <p className="text-xs text-gray-400 font-medium uppercase">לקוח</p>
+              <p className="font-semibold text-gray-900">{detailAppt.customer_name}</p>
+              <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_email}</p>
+              {detailAppt.customer_phone && (
+                <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_phone}</p>
+              )}
+            </div>
+
+            {/* Appointment details */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
+              <p className="text-xs text-gray-400 font-medium uppercase">פרטי התור</p>
+              <div className="grid grid-cols-2 gap-y-2.5 text-sm">
+                <div>
+                  <p className="text-xs text-gray-400">שירות</p>
+                  <p className="text-gray-900 font-medium">{detailAppt.service_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">מחיר</p>
+                  <p className="text-gray-900 font-medium">₪{detailAppt.price}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-400">תאריך ושעה</p>
+                  <p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-400">משך</p>
+                  <p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Reschedule info */}
+            {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm">
+                <p className="font-medium text-orange-800 mb-1">⏰ בקשת שינוי מועד נשלחה ללקוח</p>
+                <p className="text-orange-700">זמן מוצע: {formatDateTime(detailAppt.suggested_time)}</p>
+                {detailAppt.reschedule_note && (
+                  <p className="text-orange-600 text-xs mt-1">הערה: {detailAppt.reschedule_note}</p>
+                )}
+              </div>
+            )}
+
+            {/* Notes */}
+            {detailAppt.notes && (
+              <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 text-sm text-yellow-800">
+                <p className="text-xs text-yellow-600 font-medium mb-1">הערת לקוח</p>
+                {detailAppt.notes}
+              </div>
+            )}
+
+            {/* Actions inside modal */}
+            <div className="pt-1">
+              <ActionButtons appt={detailAppt} />
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Reschedule Request Modal */}
       <Modal
@@ -297,7 +365,7 @@ export default function WorkerAppointments() {
                 disabled={submittingReschedule}
                 className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg text-sm font-semibold transition-colors"
               >
-                {submittingReschedule ? 'שולח...' : '📧 שלח ללקוח'}
+                {submittingReschedule ? 'שולח...' : 'שלח ללקוח'}
               </button>
               <button
                 type="button"

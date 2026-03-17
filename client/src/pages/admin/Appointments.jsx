@@ -20,11 +20,17 @@ export default function AdminAppointments() {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ workerId: '', date: '', status: '' });
+
+  // Detail modal
+  const [detailAppt, setDetailAppt] = useState(null);
+
+  // Reschedule modal
   const [rescheduleAppt, setRescheduleAppt] = useState(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [rescheduleTime, setRescheduleTime] = useState('');
   const [rescheduleNote, setRescheduleNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
   const { addToast } = useToast();
 
   const load = async () => {
@@ -50,13 +56,16 @@ export default function AdminAppointments() {
     try {
       await updateAppointmentStatus(id, status);
       addToast(status === 'confirmed' ? 'התור אושר' : status === 'cancelled' ? 'התור בוטל' : 'הסטטוס עודכן');
+      // Update detail modal if open
+      setDetailAppt(prev => prev?.id === id ? { ...prev, status } : prev);
       load();
     } catch {
       addToast('שגיאה בעדכון סטטוס', 'error');
     }
   };
 
-  const openReschedule = (appt) => {
+  const openReschedule = (appt, e) => {
+    e?.stopPropagation();
     setRescheduleAppt(appt);
     setRescheduleDate(toDateString(new Date()));
     setRescheduleTime('');
@@ -86,6 +95,63 @@ export default function AdminAppointments() {
   };
 
   const clearFilters = () => setFilters({ workerId: '', date: '', status: '' });
+
+  const ActionButtons = ({ appt, stopProp = false }) => {
+    const wrap = (fn) => (e) => { if (stopProp) e.stopPropagation(); fn(); };
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap" onClick={e => e.stopPropagation()}>
+        {appt.status === 'pending' && (
+          <>
+            <button
+              onClick={() => handleStatus(appt.id, 'confirmed')}
+              className="px-2.5 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
+            >
+              אשר
+            </button>
+            <button
+              onClick={() => handleStatus(appt.id, 'cancelled')}
+              className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
+            >
+              בטל
+            </button>
+          </>
+        )}
+        {appt.status === 'confirmed' && (
+          <>
+            <button
+              onClick={() => handleStatus(appt.id, 'completed')}
+              className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors"
+            >
+              הושלם
+            </button>
+            <button
+              onClick={(e) => openReschedule(appt, e)}
+              className="px-2.5 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors"
+            >
+              שנה מועד
+            </button>
+            <button
+              onClick={() => handleStatus(appt.id, 'cancelled')}
+              className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
+            >
+              בטל
+            </button>
+          </>
+        )}
+        {appt.status === 'reschedule_requested' && (
+          <button
+            onClick={() => handleStatus(appt.id, 'cancelled')}
+            className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
+          >
+            בטל
+          </button>
+        )}
+        {(appt.status === 'completed' || appt.status === 'cancelled') && (
+          <span className="text-xs text-gray-300">—</span>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -141,97 +207,110 @@ export default function AdminAppointments() {
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[750px]">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">לקוח</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">עובד</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">שירות</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">תאריך ושעה</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">סטטוס</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">פעולות</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {appointments.map(appt => (
-                  <tr key={appt.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{appt.customer_name}</div>
-                      <div className="text-xs text-gray-400">{appt.customer_email}</div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{appt.worker_name}</td>
-                    <td className="px-4 py-3">
-                      <div className="text-gray-900">{appt.service_name}</div>
-                      <div className="text-xs text-gray-400">₪{appt.price} | {appt.duration_minutes} דק'</div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDateTime(appt.start_time)}</td>
-                    <td className="px-4 py-3">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-4 py-3 text-right font-medium text-gray-600">לקוח</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">תאריך ושעה</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">פעולות</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {appointments.map(appt => (
+                <tr
+                  key={appt.id}
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => setDetailAppt(appt)}
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">{appt.customer_name}</span>
                       <StatusBadge status={appt.status} />
-                      {appt.status === 'reschedule_requested' && appt.suggested_time && (
-                        <div className="text-xs text-orange-600 mt-1">מוצע: {formatDateTime(appt.suggested_time)}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {appt.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleStatus(appt.id, 'confirmed')}
-                              className="px-2.5 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              אשר
-                            </button>
-                            <button
-                              onClick={() => handleStatus(appt.id, 'cancelled')}
-                              className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              בטל
-                            </button>
-                          </>
-                        )}
-                        {appt.status === 'confirmed' && (
-                          <>
-                            <button
-                              onClick={() => handleStatus(appt.id, 'completed')}
-                              className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              הושלם
-                            </button>
-                            <button
-                              onClick={() => openReschedule(appt)}
-                              className="px-2.5 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              שנה מועד
-                            </button>
-                            <button
-                              onClick={() => handleStatus(appt.id, 'cancelled')}
-                              className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              בטל
-                            </button>
-                          </>
-                        )}
-                        {appt.status === 'reschedule_requested' && (
-                          <button
-                            onClick={() => handleStatus(appt.id, 'cancelled')}
-                            className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
-                          >
-                            בטל
-                          </button>
-                        )}
-                        {(appt.status === 'completed' || appt.status === 'cancelled') && (
-                          <span className="text-xs text-gray-300">—</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-sm">
+                    {formatDateTime(appt.start_time)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <ActionButtons appt={appt} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
+
+      {/* Detail Modal */}
+      <Modal
+        isOpen={!!detailAppt}
+        onClose={() => setDetailAppt(null)}
+        title="פרטי תור"
+      >
+        {detailAppt && (
+          <div className="space-y-4">
+            {/* Status */}
+            <div className="flex items-center justify-between">
+              <StatusBadge status={detailAppt.status} />
+              {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
+                <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">
+                  מוצע: {formatDateTime(detailAppt.suggested_time)}
+                </span>
+              )}
+            </div>
+
+            {/* Customer */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
+              <p className="text-xs text-gray-400 font-medium uppercase">לקוח</p>
+              <p className="font-semibold text-gray-900">{detailAppt.customer_name}</p>
+              <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_email}</p>
+              {detailAppt.customer_phone && (
+                <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_phone}</p>
+              )}
+            </div>
+
+            {/* Appointment details */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
+              <p className="text-xs text-gray-400 font-medium uppercase">פרטי התור</p>
+              <div className="grid grid-cols-2 gap-y-2.5 text-sm">
+                <div>
+                  <p className="text-xs text-gray-400">שירות</p>
+                  <p className="text-gray-900 font-medium">{detailAppt.service_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">מחיר</p>
+                  <p className="text-gray-900 font-medium">₪{detailAppt.price}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">משך</p>
+                  <p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">עובד</p>
+                  <p className="text-gray-900 font-medium">{detailAppt.worker_name}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-400">תאריך ושעה</p>
+                  <p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {detailAppt.notes && (
+              <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 text-sm text-yellow-800">
+                <p className="text-xs text-yellow-600 font-medium mb-1">הערת לקוח</p>
+                {detailAppt.notes}
+              </div>
+            )}
+
+            {/* Actions inside modal */}
+            <div className="pt-1">
+              <ActionButtons appt={detailAppt} />
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Reschedule Modal */}
       <Modal
