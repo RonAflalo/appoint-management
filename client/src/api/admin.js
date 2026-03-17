@@ -16,3 +16,5 @@ export const updateSettings = (data) => api.put('/admin/settings', data).then(r 
 export const getWorkersCalendar = (year, month) => api.get('/admin/workers-calendar', { params: { year, month } }).then(r => r.data);
 export const getWorkersDayDetail = (date) => api.get('/admin/workers-calendar/day', { params: { date } }).then(r => r.data);
 export const toggleAdminAsWorker = () => api.patch('/admin/me/worker-toggle').then(r => r.data);
+export const getCustomers = () => api.get('/admin/customers').then(r => r.data);
+export const completeOnboarding = () => api.post('/admin/onboarding/complete').then(r => r.data);

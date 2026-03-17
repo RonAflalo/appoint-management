@@ -77,8 +77,8 @@ const registerBusiness = (req, res) => {
 
   const transaction = db.transaction(() => {
     const businessResult = db.prepare(`
-      INSERT INTO businesses (name, slug, working_hours_json)
-      VALUES (?, ?, ?)
+      INSERT INTO businesses (name, slug, working_hours_json, onboarding_complete)
+      VALUES (?, ?, ?, 0)
     `).run(businessName, slug, DEFAULT_WORKING_HOURS);
     const businessId = businessResult.lastInsertRowid;
 

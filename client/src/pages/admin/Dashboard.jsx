@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAppointments, getWorkers, getSettings } from '../../api/admin';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -12,6 +13,7 @@ export default function AdminDashboard() {
   const [slug, setSlug] = useState(null);
   const [copied, setCopied] = useState(false);
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([
@@ -23,6 +25,9 @@ export default function AdminDashboard() {
       setWorkers(workersData.workers || []);
       if (settingsData.business?.slug) {
         setSlug(settingsData.business.slug);
+      }
+      if (settingsData.business?.onboarding_complete === 0) {
+        navigate('/admin/onboarding', { replace: true });
       }
     }).finally(() => setLoading(false));
   }, []);

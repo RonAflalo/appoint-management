@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { logout } from '../../api/auth';
+import EmailVerificationBanner from '../common/EmailVerificationBanner';
 
 const navItems = [
   { path: '/customer', label: 'קביעת תור', icon: '📅', exact: true },
@@ -35,8 +36,8 @@ export default function CustomerLayout({ children }) {
       {/* Desktop top navbar */}
       <header className="hidden md:flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">✂️</span>
-          <h1 className="text-lg font-bold text-indigo-900">מנהל תורים</h1>
+          <span className="text-2xl">📅</span>
+          <h1 className="text-lg font-bold text-indigo-900">תוריי</h1>
         </div>
         <nav className="flex items-center gap-1">
           {navItems.map(item => (
@@ -65,8 +66,8 @@ export default function CustomerLayout({ children }) {
       {/* Mobile header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center gap-2">
-          <span className="text-xl">✂️</span>
-          <h1 className="font-bold text-indigo-900">מנהל תורים</h1>
+          <span className="text-xl">📅</span>
+          <h1 className="font-bold text-indigo-900">תוריי</h1>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500">{user?.name}</span>
@@ -78,6 +79,8 @@ export default function CustomerLayout({ children }) {
           </button>
         </div>
       </header>
+
+      <EmailVerificationBanner />
 
       {/* Main content */}
       <main className="flex-1 pb-20 md:pb-6 overflow-y-auto">

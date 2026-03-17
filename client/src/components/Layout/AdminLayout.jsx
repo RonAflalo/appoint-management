@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { logout } from '../../api/auth';
+import EmailVerificationBanner from '../common/EmailVerificationBanner';
 
 const navItems = [
   { path: '/admin', label: 'דשבורד', icon: '🏠', exact: true },
@@ -10,6 +11,7 @@ const navItems = [
   { path: '/admin/workers-calendar', label: 'לוח עובדים', icon: '🗓' },
   { path: '/admin/services', label: 'שירותים', icon: '✂️' },
   { path: '/admin/appointments', label: 'תורים', icon: '📅' },
+  { path: '/admin/customers', label: 'לקוחות', icon: '👤' },
   { path: '/admin/settings', label: 'הגדרות', icon: '⚙️' },
 ];
 
@@ -95,6 +97,7 @@ export default function AdminLayout({ children }) {
             <span className="text-xl">☰</span>
           </button>
         </header>
+        <EmailVerificationBanner />
         <div className="flex-1 overflow-y-auto p-4 lg:p-6">
           {children}
         </div>

@@ -197,7 +197,11 @@ export default function PublicBooking() {
     return (
       <div dir="rtl" className="min-h-screen bg-gray-50">
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
-          <div className="text-4xl mb-3">📅</div>
+          {business?.logo_url ? (
+            <img src={business.logo_url} alt={business.name} className="w-16 h-16 object-contain rounded-xl mx-auto mb-3 bg-white/10 p-1" onError={e => e.target.style.display='none'} />
+          ) : (
+            <div className="text-4xl mb-3">📅</div>
+          )}
           <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
           {business?.address && <p className="text-indigo-200 text-sm">{business.address}</p>}
         </div>
@@ -249,9 +253,14 @@ export default function PublicBooking() {
     <div dir="rtl" className="min-h-screen bg-gray-50">
       {/* Business hero header */}
       <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
-        <div className="text-4xl mb-3">📅</div>
+        {business?.logo_url ? (
+          <img src={business.logo_url} alt={business.name} className="w-16 h-16 object-contain rounded-xl mx-auto mb-3 bg-white/10 p-1" onError={e => e.target.style.display='none'} />
+        ) : (
+          <div className="text-4xl mb-3">📅</div>
+        )}
         <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
-        {business?.address && <p className="text-indigo-200 text-sm mb-4">{business.address}</p>}
+        {business?.address && <p className="text-indigo-200 text-sm">{business.address}</p>}
+        {business?.description && <p className="text-indigo-100 text-sm mt-1 max-w-md mx-auto">{business.description}</p>}
         {step === 0 && (
           <div className="mt-4 flex flex-col items-center gap-3">
             <button

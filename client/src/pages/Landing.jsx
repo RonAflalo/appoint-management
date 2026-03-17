@@ -438,8 +438,10 @@ export default function Landing() {
             <a href="#features" className="hover:text-white transition-colors">תכונות</a>
             <a href="#pricing" className="hover:text-white transition-colors">תמחור</a>
             <Link to="/login" className="hover:text-white transition-colors">כניסה</Link>
+            <Link to="/terms" className="hover:text-white transition-colors">תנאי שימוש</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">פרטיות</Link>
           </div>
-          <p>© 2025 תוריי. כל הזכויות שמורות.</p>
+          <p>© 2026 תוריי. כל הזכויות שמורות.</p>
         </div>
       </footer>
     </div>

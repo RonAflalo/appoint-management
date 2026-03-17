@@ -145,6 +145,48 @@ async function sendNewBookingToWorker({ workerEmail, workerName, customerName, s
   );
 }
 
+async function sendPasswordResetEmail({ email, name, resetUrl }) {
+  await sendEmail(
+    email,
+    '🔑 איפוס סיסמה',
+    wrap('איפוס סיסמה', `
+      <p style="color:#374151;margin-bottom:16px">שלום ${name},<br>קיבלנו בקשה לאיפוס הסיסמה שלך.</p>
+      <a href="${resetUrl}" style="display:inline-block;background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin-bottom:16px">
+        איפוס סיסמה
+      </a>
+      <p style="color:#6b7280;font-size:12px;margin-top:16px">הקישור תקף לשעה אחת. אם לא ביקשת איפוס סיסמה, התעלם מהודעה זו.</p>
+    `)
+  );
+}
+
+async function sendVerificationEmail({ email, name, verifyUrl }) {
+  await sendEmail(
+    email,
+    '✉️ אמת את כתובת האימייל שלך',
+    wrap('אימות אימייל', `
+      <p style="color:#374151;margin-bottom:16px">שלום ${name},<br>תודה שנרשמת! לחץ על הכפתור לאימות האימייל שלך.</p>
+      <a href="${verifyUrl}" style="display:inline-block;background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin-bottom:16px">
+        אמת אימייל
+      </a>
+      <p style="color:#6b7280;font-size:12px;margin-top:16px">אם לא נרשמת למערכת, התעלם מהודעה זו.</p>
+    `)
+  );
+}
+
+async function sendReminderEmail({ customerEmail, customerName, workerName, serviceName, dateTime }) {
+  await sendEmail(
+    customerEmail,
+    '⏰ תזכורת לתור מחר',
+    wrap('תזכורת לתור', `
+      <p style="color:#374151;margin-bottom:16px">שלום ${customerName},<br>תזכורת — יש לך תור מחר!</p>
+      ${detailsTable({ customerName, workerName, serviceName, dateTime })}
+      <div style="margin-top:20px;padding:12px 16px;background:#faf5ff;border-radius:8px;color:#6b21a8;font-size:13px">
+        ⏰ אנא הגע בזמן
+      </div>
+    `)
+  );
+}
+
 async function sendAppointmentCancelledByCustomer({ workerEmail, workerName, customerName, serviceName, dateTime }) {
   await sendEmail(
     workerEmail,
@@ -181,4 +223,7 @@ module.exports = {
   sendRescheduleRequest,
   sendNewBookingToWorker,
   sendRescheduleAcceptedToWorker,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+  sendReminderEmail,
 };

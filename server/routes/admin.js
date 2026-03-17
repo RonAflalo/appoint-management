@@ -9,6 +9,8 @@ const {
   getServices, createService, updateService, deleteService,
   getAppointments, updateAppointmentStatus, requestReschedule,
   getSettings, updateSettings,
+  getCustomers,
+  completeOnboarding,
 } = require('../controllers/adminController');
 
 router.use(authenticate, authorize('admin'));
@@ -34,5 +36,8 @@ router.put('/settings', updateSettings);
 
 router.get('/workers-calendar', getWorkersCalendar);
 router.get('/workers-calendar/day', getWorkersDayDetail);
+
+router.get('/customers', getCustomers);
+router.post('/onboarding/complete', completeOnboarding);
 
 module.exports = router;

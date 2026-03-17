@@ -268,7 +268,7 @@ const getSettings = (req, res) => {
 };
 
 const updateSettings = (req, res) => {
-  const { name, address, working_hours } = req.body;
+  const { name, address, working_hours, description, logo_url } = req.body;
   const db = getDb();
   const business = db.prepare('SELECT id FROM businesses WHERE id = ?').get(req.user.business_id);
   if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
@@ -279,13 +279,41 @@ const updateSettings = (req, res) => {
     UPDATE businesses SET
       name = COALESCE(?, name),
       address = COALESCE(?, address),
-      working_hours_json = COALESCE(?, working_hours_json)
+      working_hours_json = COALESCE(?, working_hours_json),
+      description = COALESCE(?, description),
+      logo_url = COALESCE(?, logo_url)
     WHERE id = ?
-  `).run(name ?? null, address ?? null, workingHoursJson, req.user.business_id);
+  `).run(name ?? null, address ?? null, workingHoursJson, description ?? null, logo_url ?? null, req.user.business_id);
 
   const updated = db.prepare('SELECT * FROM businesses WHERE id = ?').get(req.user.business_id);
   updated.working_hours = JSON.parse(updated.working_hours_json);
   res.json({ success: true, business: updated });
+};
+
+// ---- Customers ----
+
+const getCustomers = (req, res) => {
+  const db = getDb();
+  const customers = db.prepare(`
+    SELECT
+      u.id, u.name, u.email, u.created_at, u.email_verified,
+      COUNT(a.id) AS appointment_count,
+      MAX(a.start_time) AS last_appointment
+    FROM users u
+    LEFT JOIN appointments a ON a.customer_id = u.id AND a.business_id = ?
+    WHERE u.role = 'user' AND u.business_id = ? AND u.is_active = 1
+    GROUP BY u.id
+    ORDER BY u.name ASC
+  `).all(req.user.business_id, req.user.business_id);
+  res.json({ success: true, customers });
+};
+
+// ---- Onboarding ----
+
+const completeOnboarding = (req, res) => {
+  const db = getDb();
+  db.prepare('UPDATE businesses SET onboarding_complete = 1 WHERE id = ?').run(req.user.business_id);
+  res.json({ success: true, message: 'האונבורדינג הושלם' });
 };
 
 // ---- Workers Calendar ----
@@ -452,4 +480,6 @@ module.exports = {
   getServices, createService, updateService, deleteService,
   getAppointments, updateAppointmentStatus, requestReschedule,
   getSettings, updateSettings,
+  getCustomers,
+  completeOnboarding,
 };

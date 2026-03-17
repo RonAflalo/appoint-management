@@ -101,7 +101,13 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-500">
+          <div className="mt-4 text-center">
+            <Link to="/forgot-password" className="text-sm text-indigo-500 hover:text-indigo-700">
+              שכחתי סיסמה
+            </Link>
+          </div>
+
+          <div className="mt-4 text-center text-sm text-gray-500">
             אין לך חשבון?{' '}
             <Link
               to={redirect?.startsWith('/book/') ? `/register?slug=${redirect.split('/book/')[1]}` : '/register'}

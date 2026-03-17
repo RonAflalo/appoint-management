@@ -19,6 +19,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
     "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
     "resend": "^6.9.3"
   },
   "devDependencies": {

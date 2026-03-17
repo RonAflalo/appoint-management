@@ -87,6 +87,22 @@ function initializeDatabase(overridePath) {
   try { db.exec("ALTER TABLE businesses ADD COLUMN slug TEXT"); } catch (_) {}
   try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_businesses_slug ON businesses(slug)"); } catch (_) {}
 
+  // Migrate: business customization + onboarding
+  try { db.exec("ALTER TABLE businesses ADD COLUMN description TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE businesses ADD COLUMN logo_url TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE businesses ADD COLUMN onboarding_complete INTEGER NOT NULL DEFAULT 1"); } catch (_) {}
+
+  // Migrate: email verification
+  try { db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0"); } catch (_) {}
+  try { db.exec("ALTER TABLE users ADD COLUMN verification_token TEXT"); } catch (_) {}
+
+  // Migrate: password reset
+  try { db.exec("ALTER TABLE users ADD COLUMN reset_token TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE users ADD COLUMN reset_token_expires TEXT"); } catch (_) {}
+
+  // Migrate: reminder tracking
+  try { db.exec("ALTER TABLE appointments ADD COLUMN reminder_sent INTEGER NOT NULL DEFAULT 0"); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

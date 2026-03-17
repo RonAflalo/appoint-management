@@ -19,6 +19,8 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [description, setDescription] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
   const [workingHours, setWorkingHours] = useState(DEFAULT_HOURS);
   const { addToast } = useToast();
 
@@ -27,6 +29,8 @@ export default function AdminSettings() {
       const b = data.business;
       setName(b.name || '');
       setAddress(b.address || '');
+      setDescription(b.description || '');
+      setLogoUrl(b.logo_url || '');
       setWorkingHours(b.working_hours || DEFAULT_HOURS);
     }).catch(() => {
       addToast('שגיאה בטעינת ההגדרות', 'error');
@@ -55,7 +59,7 @@ export default function AdminSettings() {
     }
     setSaving(true);
     try {
-      await updateSettings({ name, address, working_hours: workingHours });
+      await updateSettings({ name, address, description, logo_url: logoUrl, working_hours: workingHours });
       addToast('ההגדרות נשמרו בהצלחה');
     } catch (e) {
       addToast(e.response?.data?.message || 'שגיאה בשמירת ההגדרות', 'error');
@@ -97,6 +101,32 @@ export default function AdminSettings() {
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="כתובת העסק"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">תיאור העסק</label>
+              <textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                placeholder="תיאור קצר של העסק שיוצג ללקוחות"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">כתובת לוגו (URL)</label>
+              <input
+                type="url"
+                value={logoUrl}
+                onChange={e => setLogoUrl(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="https://example.com/logo.png"
+                dir="ltr"
+              />
+              {logoUrl && (
+                <div className="mt-2">
+                  <img src={logoUrl} alt="לוגו" className="h-16 w-16 object-contain rounded-lg border border-gray-200" onError={e => e.target.style.display='none'} />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -20,18 +20,28 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Rate limiting on auth endpoints (skipped in test environment)
+// Rate limiting (skipped in test environment)
 if (process.env.NODE_ENV !== 'test') {
   const rateLimit = require('express-rate-limit');
   const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20,
+    windowMs: 15 * 60 * 1000,
+    max: 10,
     message: { success: false, message: 'יותר מדי ניסיונות, נסה שוב מאוחר יותר' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: { success: false, message: 'יותר מדי בקשות, נסה שוב מאוחר יותר' },
     standardHeaders: true,
     legacyHeaders: false,
   });
   app.use('/api/auth/login', authLimiter);
   app.use('/api/auth/register', authLimiter);
+  app.use('/api/auth/forgot-password', authLimiter);
+  app.use('/api/auth/reset-password', authLimiter);
+  app.use('/api', apiLimiter);
 }
 
 app.use('/api/auth', authRoutes);

@@ -20,7 +20,7 @@ export default function CustomerHome() {
   }, []);
 
   const upcomingAppointments = appointments
-    .filter(a => isFuture(a.start_time) && ['pending', 'confirmed'].includes(a.status))
+    .filter(a => isFuture(a.start_time) && ['pending', 'confirmed', 'reschedule_requested'].includes(a.status))
     .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
   const nextAppointment = upcomingAppointments[0];
