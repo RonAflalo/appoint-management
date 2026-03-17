@@ -25,6 +25,7 @@ async function sendEmail(to, subject, html) {
     return;
   }
   const sender = parsFrom();
+  console.log(`[Email] Sender resolved:`, JSON.stringify(sender));
   try {
     const res = await fetch(BREVO_API_URL, {
       method: 'POST',
