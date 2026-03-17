@@ -31,21 +31,7 @@ export default function CustomerHome() {
     <div>
       {/* Business info card */}
       {user?.business && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {user.business.logo_url && (
-              <img
-                src={user.business.logo_url}
-                alt={user.business.name}
-                className="w-10 h-10 rounded-xl object-contain border border-gray-100"
-                onError={e => e.target.style.display='none'}
-              />
-            )}
-            <div>
-              <p className="font-semibold text-gray-900 text-sm">{user.business.name}</p>
-              {user.business.address && <p className="text-xs text-gray-400 mt-0.5">{user.business.address}</p>}
-            </div>
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex justify-center">
           <BusinessSocialLinks business={user.business} />
         </div>
       )}
