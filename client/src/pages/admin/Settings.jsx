@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getSettings, updateSettings } from '../../api/admin';
+import { getSettings, updateSettings, uploadImage } from '../../api/admin';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useToast } from '../../hooks/useToast';
 import { DAYS_HE } from '../../utils/dateUtils';
@@ -14,6 +14,70 @@ const DEFAULT_HOURS = {
   "6": null,
 };
 
+function ImageUploadField({ label, hint, value, onChange }) {
+  const [uploading, setUploading] = useState(false);
+  const { addToast } = useToast();
+
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const data = await uploadImage(file);
+      onChange(data.url);
+    } catch {
+      addToast('שגיאה בהעלאת התמונה', 'error');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+      {hint && <p className="text-xs text-gray-400 mb-2">{hint}</p>}
+      <div className="flex items-start gap-3">
+        {value ? (
+          <div className="relative flex-shrink-0">
+            <img
+              src={value}
+              alt={label}
+              className="h-20 w-20 object-cover rounded-xl border border-gray-200 bg-gray-50"
+              onError={e => { e.target.style.display = 'none'; }}
+            />
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div className="h-20 w-20 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-3xl flex-shrink-0 bg-gray-50">
+            +
+          </div>
+        )}
+        <label className="cursor-pointer">
+          <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
+          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border
+            ${uploading
+              ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
+            {uploading ? (
+              <>
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent"></div>
+                מעלה...
+              </>
+            ) : value ? 'החלף תמונה' : 'העלה תמונה'}
+          </span>
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -22,6 +86,9 @@ export default function AdminSettings() {
   const [phone, setPhone] = useState('');
   const [description, setDescription] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState('');
   const [workingHours, setWorkingHours] = useState(DEFAULT_HOURS);
   const { addToast } = useToast();
 
@@ -33,6 +100,9 @@ export default function AdminSettings() {
       setPhone(b.phone || '');
       setDescription(b.description || '');
       setLogoUrl(b.logo_url || '');
+      setCoverUrl(b.cover_url || '');
+      setInstagramUrl(b.instagram_url || '');
+      setFacebookUrl(b.facebook_url || '');
       setWorkingHours(b.working_hours || DEFAULT_HOURS);
     }).catch(() => {
       addToast('שגיאה בטעינת ההגדרות', 'error');
@@ -61,7 +131,14 @@ export default function AdminSettings() {
     }
     setSaving(true);
     try {
-      await updateSettings({ name, address, phone, description, logo_url: logoUrl, working_hours: workingHours });
+      await updateSettings({
+        name, address, phone, description,
+        logo_url: logoUrl || null,
+        cover_url: coverUrl || null,
+        instagram_url: instagramUrl || null,
+        facebook_url: facebookUrl || null,
+        working_hours: workingHours,
+      });
       addToast('ההגדרות נשמרו בהצלחה');
     } catch (e) {
       addToast(e.response?.data?.message || 'שגיאה בשמירת ההגדרות', 'error');
@@ -114,6 +191,7 @@ export default function AdminSettings() {
                 placeholder="050-0000000"
                 dir="ltr"
               />
+              <p className="text-xs text-gray-400 mt-1">ישמש גם לחיוג ישיר ו-WhatsApp מדף הלקוח</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">תיאור העסק</label>
@@ -125,21 +203,58 @@ export default function AdminSettings() {
                 placeholder="תיאור קצר של העסק שיוצג ללקוחות"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Images */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">תמונות</h2>
+          <div className="space-y-6">
+            <ImageUploadField
+              label="לוגו"
+              hint="מוצג בדף הזמנת התורים ובאפליקציה (מרובע, מומלץ 200×200 פיקסל)"
+              value={logoUrl}
+              onChange={setLogoUrl}
+            />
+            <ImageUploadField
+              label="תמונת רקע / כריכה"
+              hint="מוצגת בראש דף הזמנת התורים (רחבה, מומלץ 1200×400 פיקסל)"
+              value={coverUrl}
+              onChange={setCoverUrl}
+            />
+          </div>
+        </div>
+
+        {/* Social links */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">קישורים חברתיים</h2>
+          <p className="text-sm text-gray-400 mb-4">יוצגו כאייקונים ללחיצה בדף הלקוח</p>
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">כתובת לוגו (URL)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                <span className="text-pink-500">📸</span> Instagram
+              </label>
               <input
                 type="url"
-                value={logoUrl}
-                onChange={e => setLogoUrl(e.target.value)}
+                value={instagramUrl}
+                onChange={e => setInstagramUrl(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="https://example.com/logo.png"
+                placeholder="https://instagram.com/your_handle"
                 dir="ltr"
               />
-              {logoUrl && (
-                <div className="mt-2">
-                  <img src={logoUrl} alt="לוגו" className="h-16 w-16 object-contain rounded-lg border border-gray-200" onError={e => e.target.style.display='none'} />
-                </div>
-              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                <span className="text-blue-600">📘</span> Facebook
+              </label>
+              <input
+                type="url"
+                value={facebookUrl}
+                onChange={e => setFacebookUrl(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="https://facebook.com/your_page"
+                dir="ltr"
+              />
             </div>
           </div>
         </div>
@@ -154,7 +269,6 @@ export default function AdminSettings() {
               return (
                 <div key={day} className={`p-3 rounded-lg border transition-colors
                   ${isOpen ? 'border-indigo-100 bg-indigo-50/30' : 'border-gray-100 bg-gray-50'}`}>
-                  {/* Top row: day name + toggle */}
                   <div className="flex items-center gap-3">
                     <div className="w-20 shrink-0 text-sm font-medium text-gray-700">{DAYS_HE[day]}</div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -166,9 +280,7 @@ export default function AdminSettings() {
                       />
                       <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
-                    {/* Show "סגור" inline on desktop, hidden on mobile when open (shown below) */}
                     {!isOpen && <span className="text-sm text-gray-400">סגור</span>}
-                    {/* Show times inline on desktop */}
                     {isOpen && (
                       <div className="hidden sm:flex items-center gap-2 text-sm">
                         <input
@@ -187,7 +299,6 @@ export default function AdminSettings() {
                       </div>
                     )}
                   </div>
-                  {/* Time inputs on their own row for mobile only */}
                   {isOpen && (
                     <div className="flex sm:hidden items-center gap-2 mt-2 pe-1">
                       <input

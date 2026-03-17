@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getMyAppointments } from '../../api/user';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
+import BusinessSocialLinks from '../../components/common/BusinessSocialLinks';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDateTime, isFuture } from '../../utils/dateUtils';
 
@@ -28,10 +29,31 @@ export default function CustomerHome() {
 
   return (
     <div>
+      {/* Business info card */}
+      {user?.business && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {user.business.logo_url && (
+              <img
+                src={user.business.logo_url}
+                alt={user.business.name}
+                className="w-10 h-10 rounded-xl object-contain border border-gray-100"
+                onError={e => e.target.style.display='none'}
+              />
+            )}
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">{user.business.name}</p>
+              {user.business.address && <p className="text-xs text-gray-400 mt-0.5">{user.business.address}</p>}
+            </div>
+          </div>
+          <BusinessSocialLinks business={user.business} />
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 mb-6 text-white">
         <h1 className="text-2xl font-bold mb-1">שלום, {user?.name}! 👋</h1>
-        <p className="text-indigo-200 text-sm mb-5">ברוך הבא למנהל התורים שלנו</p>
+        <p className="text-indigo-200 text-sm mb-5">{user?.business?.name ? `ברוך הבא ל${user.business.name}` : 'ברוך הבא'}</p>
 
         {nextAppointment ? (
           <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 mb-4">

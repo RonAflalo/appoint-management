@@ -18,3 +18,8 @@ export const getWorkersDayDetail = (date) => api.get('/admin/workers-calendar/da
 export const toggleAdminAsWorker = () => api.patch('/admin/me/worker-toggle').then(r => r.data);
 export const getCustomers = () => api.get('/admin/customers').then(r => r.data);
 export const completeOnboarding = () => api.post('/admin/onboarding/complete').then(r => r.data);
+export const uploadImage = (file) => {
+  const form = new FormData();
+  form.append('image', file);
+  return api.post('/admin/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
+};

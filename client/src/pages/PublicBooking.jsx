@@ -5,6 +5,22 @@ import 'react-calendar/dist/Calendar.css';
 import { getBusinessInfo, getPublicServices, getPublicWorkers, getPublicSlots, getPublicAvailableDays, publicBook } from '../api/public';
 import { toDateString, formatTime } from '../utils/dateUtils';
 import { useAuth } from '../hooks/useAuth';
+import BusinessSocialLinks from '../components/common/BusinessSocialLinks';
+
+function buildCalendarUrl(slot, durationMinutes, title, details, location) {
+  const startDate = new Date(slot);
+  const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${fmt(startDate)}/${fmt(endDate)}`,
+    details,
+    location: location || '',
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
 
 const STEPS = ['ברוך הבא', 'בחר שירות', 'בחר עובד', 'בחר תאריך', 'בחר שעה', 'פרטים ואישור'];
 
@@ -204,6 +220,11 @@ export default function PublicBooking() {
           )}
           <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
           {business?.address && <p className="text-indigo-200 text-sm">{business.address}</p>}
+          {(business?.phone || business?.instagram_url || business?.facebook_url) && (
+            <div className="flex justify-center mt-3">
+              <BusinessSocialLinks business={business} variant="light" />
+            </div>
+          )}
         </div>
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
           <div className="text-5xl mb-4">🔧</div>
@@ -215,6 +236,16 @@ export default function PublicBooking() {
   }
 
   if (booked) {
+    const calUrl = selectedSlot && selectedService
+      ? buildCalendarUrl(
+          selectedSlot,
+          selectedService.duration_minutes,
+          `תור ל-${selectedService.name} ב-${business?.name || ''}`,
+          `עובד: ${selectedWorker?.name || 'הקצאה אוטומטית'}`,
+          business?.address || ''
+        )
+      : null;
+
     return (
       <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full mx-4">
@@ -236,52 +267,125 @@ export default function PublicBooking() {
                 <span className="font-semibold">{selectedSlot ? formatTime(selectedSlot) : ''} — {selectedDate?.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
               </div>
             </div>
-            <Link
-              to={`/book/${slug}`}
-              onClick={() => { setBooked(false); setStep(0); setSelectedService(null); setSelectedWorker(null); setSelectedDate(null); setSelectedSlot(null); setGuestName(''); setGuestEmail(''); setNotes(''); }}
-              className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors"
-            >
-              קביעת תור נוסף
-            </Link>
+            <div className="space-y-3">
+              {calUrl && (
+                <a
+                  href={calUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full border-2 border-indigo-200 text-indigo-700 py-3 rounded-xl font-medium hover:bg-indigo-50 transition-colors text-sm"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                  </svg>
+                  הוסף ליומן Google
+                </a>
+              )}
+              <Link
+                to={`/book/${slug}`}
+                onClick={() => { setBooked(false); setStep(0); setSelectedService(null); setSelectedWorker(null); setSelectedDate(null); setSelectedSlot(null); setGuestName(''); setGuestEmail(''); setNotes(''); }}
+                className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+              >
+                קביעת תור נוסף
+              </Link>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  const hasCover = !!business?.cover_url;
+  const hasSocial = business?.phone || business?.instagram_url || business?.facebook_url;
+
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50">
       {/* Business hero header */}
-      <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
-        {business?.logo_url ? (
-          <img src={business.logo_url} alt={business.name} className="w-16 h-16 object-contain rounded-xl mx-auto mb-3 bg-white/10 p-1" onError={e => e.target.style.display='none'} />
-        ) : (
-          <div className="text-4xl mb-3">📅</div>
-        )}
-        <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
-        {business?.address && <p className="text-indigo-200 text-sm">{business.address}</p>}
-        {business?.description && <p className="text-indigo-100 text-sm mt-1 max-w-md mx-auto">{business.description}</p>}
-        {step === 0 && (
-          <div className="mt-4 flex flex-col items-center gap-3">
-            <button
-              onClick={() => setStep(1)}
-              className="bg-white text-indigo-700 font-bold px-8 py-3 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg"
-            >
-              קבע תור עכשיו
-            </button>
-            {isCustomer ? (
-              <p className="text-indigo-200 text-sm">שלום, {user.name} 👋</p>
-            ) : (
-              <p className="text-indigo-200 text-sm">
-                <Link to={`/login?redirect=/book/${slug}`} className="underline font-medium text-white hover:text-indigo-100">כניסה</Link>
-                {' '}/{' '}
-                <Link to={`/register?slug=${slug}`} className="underline font-medium text-white hover:text-indigo-100">הרשמה</Link>
-                {' '}לחוויה מהירה יותר
-              </p>
+      {hasCover ? (
+        <div>
+          {/* Cover image */}
+          <div className="relative w-full h-44 sm:h-56 overflow-hidden">
+            <img
+              src={business.cover_url}
+              alt={business.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/30" />
+          </div>
+          {/* Business info bar */}
+          <div className="bg-white shadow-sm border-b border-gray-100">
+            <div className="max-w-lg mx-auto px-4 py-4">
+              <div className="flex items-center gap-3">
+                {business.logo_url && (
+                  <img src={business.logo_url} alt={business.name} className="w-12 h-12 rounded-xl object-contain border border-gray-200 bg-white flex-shrink-0" onError={e => e.target.style.display='none'} />
+                )}
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl font-black text-gray-900 truncate">{business.name}</h1>
+                  {business.address && <p className="text-sm text-gray-400 truncate">{business.address}</p>}
+                  {business.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{business.description}</p>}
+                </div>
+                {hasSocial && <BusinessSocialLinks business={business} variant="dark" />}
+              </div>
+            </div>
+            {step === 0 && (
+              <div className="px-4 pb-4 flex flex-col items-center gap-3">
+                <button
+                  onClick={() => setStep(1)}
+                  className="w-full max-w-xs bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-colors shadow"
+                >
+                  קבע תור עכשיו
+                </button>
+                {isCustomer ? (
+                  <p className="text-gray-400 text-sm">שלום, {user.name} 👋</p>
+                ) : (
+                  <p className="text-gray-400 text-sm">
+                    <Link to={`/login?redirect=/book/${slug}`} className="underline font-medium text-indigo-600">כניסה</Link>
+                    {' '}/{' '}
+                    <Link to={`/register?slug=${slug}`} className="underline font-medium text-indigo-600">הרשמה</Link>
+                    {' '}לחוויה מהירה יותר
+                  </p>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
+          {business?.logo_url ? (
+            <img src={business.logo_url} alt={business.name} className="w-16 h-16 object-contain rounded-xl mx-auto mb-3 bg-white/10 p-1" onError={e => e.target.style.display='none'} />
+          ) : (
+            <div className="text-4xl mb-3">📅</div>
+          )}
+          <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
+          {business?.address && <p className="text-indigo-200 text-sm">{business.address}</p>}
+          {business?.description && <p className="text-indigo-100 text-sm mt-1 max-w-md mx-auto">{business.description}</p>}
+          {hasSocial && (
+            <div className="flex justify-center mt-3">
+              <BusinessSocialLinks business={business} variant="light" />
+            </div>
+          )}
+          {step === 0 && (
+            <div className="mt-4 flex flex-col items-center gap-3">
+              <button
+                onClick={() => setStep(1)}
+                className="bg-white text-indigo-700 font-bold px-8 py-3 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg"
+              >
+                קבע תור עכשיו
+              </button>
+              {isCustomer ? (
+                <p className="text-indigo-200 text-sm">שלום, {user.name} 👋</p>
+              ) : (
+                <p className="text-indigo-200 text-sm">
+                  <Link to={`/login?redirect=/book/${slug}`} className="underline font-medium text-white hover:text-indigo-100">כניסה</Link>
+                  {' '}/{' '}
+                  <Link to={`/register?slug=${slug}`} className="underline font-medium text-white hover:text-indigo-100">הרשמה</Link>
+                  {' '}לחוויה מהירה יותר
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {step > 0 && (
         <div className="max-w-lg mx-auto px-4 py-6">

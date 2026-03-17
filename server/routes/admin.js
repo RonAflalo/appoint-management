@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const {
   getWorkers, createWorker, updateWorker, deleteWorker,
   toggleAdminAsWorker,
@@ -8,7 +9,7 @@ const {
   getWorkersCalendar, getWorkersDayDetail,
   getServices, createService, updateService, deleteService,
   getAppointments, updateAppointmentStatus, requestReschedule,
-  getSettings, updateSettings,
+  getSettings, updateSettings, uploadImage,
   getCustomers,
   completeOnboarding,
 } = require('../controllers/adminController');
@@ -33,6 +34,7 @@ router.post('/appointments/:id/reschedule', requestReschedule);
 
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
+router.post('/upload', upload.single('image'), uploadImage);
 
 router.get('/workers-calendar', getWorkersCalendar);
 router.get('/workers-calendar/day', getWorkersDayDetail);

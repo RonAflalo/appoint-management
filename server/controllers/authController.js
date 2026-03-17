@@ -127,11 +127,18 @@ const logout = (req, res) => {
 };
 
 const getMe = (req, res) => {
-  // Re-query DB to get fresh email_verified status
   const db = getDb();
-  const user = db.prepare('SELECT id, name, email, role, business_id, email_verified FROM users WHERE id = ?').get(req.user.id);
+  const user = db.prepare('SELECT id, name, email, role, business_id, email_verified, phone FROM users WHERE id = ?').get(req.user.id);
   if (!user) return res.status(404).json({ success: false, message: 'משתמש לא נמצא' });
-  return res.json({ success: true, user });
+
+  let business = null;
+  if (user.business_id) {
+    business = db.prepare(
+      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address FROM businesses WHERE id = ?'
+    ).get(user.business_id);
+  }
+
+  return res.json({ success: true, user: { ...user, business } });
 };
 
 const forgotPassword = (req, res) => {

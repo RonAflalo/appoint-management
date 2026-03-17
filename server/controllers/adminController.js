@@ -124,7 +124,8 @@ const getAppointments = (req, res) => {
   let query = `
     SELECT
       a.id, a.start_time, a.end_time, a.status, a.notes, a.created_at,
-      c.id AS customer_id, c.name AS customer_name, c.email AS customer_email,
+      a.suggested_time, a.reschedule_note,
+      c.id AS customer_id, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
       w.id AS worker_id, w.name AS worker_name,
       s.id AS service_id, s.name AS service_name, s.duration_minutes, s.price
     FROM appointments a
@@ -268,7 +269,7 @@ const getSettings = (req, res) => {
 };
 
 const updateSettings = (req, res) => {
-  const { name, address, working_hours, description, logo_url, phone } = req.body;
+  const { name, address, working_hours, description, logo_url, cover_url, phone, instagram_url, facebook_url } = req.body;
   const db = getDb();
   const business = db.prepare('SELECT id FROM businesses WHERE id = ?').get(req.user.business_id);
   if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
@@ -282,13 +283,26 @@ const updateSettings = (req, res) => {
       working_hours_json = COALESCE(?, working_hours_json),
       description = COALESCE(?, description),
       logo_url = COALESCE(?, logo_url),
-      phone = COALESCE(?, phone)
+      cover_url = COALESCE(?, cover_url),
+      phone = COALESCE(?, phone),
+      instagram_url = COALESCE(?, instagram_url),
+      facebook_url = COALESCE(?, facebook_url)
     WHERE id = ?
-  `).run(name ?? null, address ?? null, workingHoursJson, description ?? null, logo_url ?? null, phone ?? null, req.user.business_id);
+  `).run(
+    name ?? null, address ?? null, workingHoursJson,
+    description ?? null, logo_url ?? null, cover_url ?? null,
+    phone ?? null, instagram_url ?? null, facebook_url ?? null,
+    req.user.business_id
+  );
 
   const updated = db.prepare('SELECT * FROM businesses WHERE id = ?').get(req.user.business_id);
   updated.working_hours = JSON.parse(updated.working_hours_json);
   res.json({ success: true, business: updated });
+};
+
+const uploadImage = (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'לא נמצא קובץ' });
+  res.json({ success: true, url: `/uploads/${req.file.filename}` });
 };
 
 // ---- Customers ----
@@ -480,7 +494,7 @@ module.exports = {
   getWorkersCalendar, getWorkersDayDetail,
   getServices, createService, updateService, deleteService,
   getAppointments, updateAppointmentStatus, requestReschedule,
-  getSettings, updateSettings,
+  getSettings, updateSettings, uploadImage,
   getCustomers,
   completeOnboarding,
 };

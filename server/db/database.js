@@ -107,6 +107,11 @@ function initializeDatabase(overridePath) {
   try { db.exec("ALTER TABLE users ADD COLUMN phone TEXT"); } catch (_) {}
   try { db.exec("ALTER TABLE businesses ADD COLUMN phone TEXT"); } catch (_) {}
 
+  // Migrate: cover image + social links
+  try { db.exec("ALTER TABLE businesses ADD COLUMN cover_url TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE businesses ADD COLUMN instagram_url TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE businesses ADD COLUMN facebook_url TEXT"); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }
