@@ -201,6 +201,24 @@ async function sendAppointmentCancelledByCustomer({ workerEmail, workerName, cus
   );
 }
 
+async function sendWaitlistAvailable({ customerEmail, customerName, serviceName, slotTime, confirmUrl }) {
+  const dt = new Date(slotTime).toLocaleString('he-IL', { dateStyle: 'full', timeStyle: 'short' });
+  await sendEmail(
+    customerEmail,
+    '🔔 השעה שחיכית לה התפנתה!',
+    wrap('השעה התפנתה — יש לך 30 דקות לאשר', `
+      <p style="color:#374151;margin-bottom:16px">שלום ${customerName},<br>השעה שרשמת לה לרשימת המתנה עבור <strong>${serviceName}</strong> התפנתה!</p>
+      <p style="color:#374151;margin-bottom:16px"><strong>מועד:</strong> ${dt}</p>
+      <a href="${confirmUrl}" style="display:inline-block;background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin-bottom:16px">
+        ✅ אשר את התור שלי
+      </a>
+      <div style="margin-top:16px;padding:12px 16px;background:#fef3c7;border-radius:8px;color:#92400e;font-size:13px">
+        ⏰ יש לך 30 דקות לאשר — לאחר מכן ההזדמנות תעבור ללקוח הבא בתור
+      </div>
+    `)
+  );
+}
+
 async function sendRescheduleAcceptedToWorker({ workerEmail, workerName, customerName, serviceName, dateTime }) {
   await sendEmail(
     workerEmail,
@@ -217,6 +235,7 @@ async function sendRescheduleAcceptedToWorker({ workerEmail, workerName, custome
 
 module.exports = {
   verifyEmailConnection,
+  sendWaitlistAvailable,
   sendAppointmentConfirmed,
   sendAppointmentCancelled,
   sendAppointmentCancelledByCustomer,

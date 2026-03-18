@@ -34,6 +34,7 @@ import WorkerAvailability from './pages/worker/Availability';
 import CustomerHome from './pages/customer/Home';
 import CustomerBook from './pages/customer/Book';
 import CustomerMyAppointments from './pages/customer/MyAppointments';
+import WaitlistConfirm from './pages/WaitlistConfirm';
 
 // Layouts
 import AdminLayout from './components/Layout/AdminLayout';
@@ -58,6 +59,7 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/verify-email/:token" element={<VerifyEmail />} />
+      <Route path="/waitlist/confirm/:token" element={<WaitlistConfirm />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
 

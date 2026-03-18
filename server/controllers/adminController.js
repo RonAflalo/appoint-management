@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const { getDb } = require('../db/database');
 const { sendAppointmentConfirmed, sendAppointmentCancelled, sendRescheduleRequest } = require('../services/emailService');
 const { formatDateTime } = require('../utils/dateFormat');
+const { notifyNextInQueue } = require('../utils/waitlist');
 
 // ---- Workers ----
 
@@ -185,7 +186,11 @@ const updateAppointmentStatus = (req, res) => {
     dateTime: formatDateTime(appt.start_time),
   };
   if (status === 'confirmed') sendAppointmentConfirmed(emailData);
-  if (status === 'cancelled') sendAppointmentCancelled({ ...emailData, cancelledBy: 'admin' });
+  if (status === 'cancelled') {
+    sendAppointmentCancelled({ ...emailData, cancelledBy: 'admin' });
+    const fullAppt = db.prepare('SELECT business_id, service_id, worker_id, start_time FROM appointments WHERE id = ?').get(id);
+    notifyNextInQueue({ businessId: fullAppt.business_id, serviceId: fullAppt.service_id, slotTime: fullAppt.start_time, workerId: fullAppt.worker_id });
+  }
 
   res.json({ success: true, message: 'הסטטוס עודכן' });
 };

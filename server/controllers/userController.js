@@ -1,5 +1,6 @@
 const { getDb } = require('../db/database');
 const { getAvailableSlots } = require('../utils/slots');
+const { notifyNextInQueue } = require('../utils/waitlist');
 const { sendNewBookingToWorker, sendAppointmentConfirmed, sendRescheduleAcceptedToWorker, sendAppointmentCancelledByCustomer } = require('../services/emailService');
 const { formatDateTime } = require('../utils/dateFormat');
 
@@ -186,6 +187,7 @@ const cancelAppointment = (req, res) => {
     return res.status(400).json({ success: false, message: 'לא ניתן לבטל תור זה' });
   }
 
+  const fullAppt = db.prepare('SELECT business_id, service_id, worker_id, start_time FROM appointments WHERE id = ?').get(id);
   db.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?").run(id);
 
   sendAppointmentCancelledByCustomer({
@@ -195,6 +197,8 @@ const cancelAppointment = (req, res) => {
     serviceName: appt.service_name,
     dateTime: formatDateTime(appt.start_time),
   });
+
+  notifyNextInQueue({ businessId: fullAppt.business_id, serviceId: fullAppt.service_id, slotTime: fullAppt.start_time, workerId: fullAppt.worker_id });
 
   res.json({ success: true, message: 'התור בוטל בהצלחה' });
 };
@@ -272,4 +276,103 @@ const acceptReschedule = (req, res) => {
   res.json({ success: true, message: 'המועד החדש אושר בהצלחה' });
 };
 
-module.exports = { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule };
+const addToWaitlist = (req, res) => {
+  const { slug, serviceId, workerId, slotTime } = req.body;
+  if (!slug || !serviceId || !slotTime) {
+    return res.status(400).json({ success: false, message: 'חסרים פרטים' });
+  }
+  const db = getDb();
+  const business = db.prepare('SELECT id FROM businesses WHERE slug = ?').get(slug);
+  if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
+
+  const existing = db.prepare(`
+    SELECT id FROM waiting_list
+    WHERE business_id = ? AND customer_id = ? AND service_id = ? AND slot_time = ? AND status IN ('waiting', 'notified')
+  `).get(business.id, req.user.id, serviceId, slotTime);
+  if (existing) return res.status(409).json({ success: false, message: 'כבר רשום לרשימת המתנה לשעה זו' });
+
+  db.prepare(`
+    INSERT INTO waiting_list (business_id, customer_id, service_id, worker_id, slot_time)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(business.id, req.user.id, serviceId, workerId || null, slotTime);
+
+  return res.json({ success: true, message: 'נוספת לרשימת המתנה' });
+};
+
+const getMyWaitlist = (req, res) => {
+  const db = getDb();
+  const entries = db.prepare(`
+    SELECT wl.id, wl.slot_time, wl.status, wl.created_at,
+           s.name AS service_name, s.duration_minutes, s.price,
+           b.name AS business_name, b.slug,
+           u.name AS worker_name
+    FROM waiting_list wl
+    JOIN services s ON wl.service_id = s.id
+    JOIN businesses b ON wl.business_id = b.id
+    LEFT JOIN users u ON wl.worker_id = u.id
+    WHERE wl.customer_id = ? AND wl.status IN ('waiting', 'notified')
+    ORDER BY wl.slot_time ASC
+  `).all(req.user.id);
+  res.json({ success: true, entries });
+};
+
+const cancelWaitlistEntry = (req, res) => {
+  const db = getDb();
+  const entry = db.prepare('SELECT id FROM waiting_list WHERE id = ? AND customer_id = ?').get(req.params.id, req.user.id);
+  if (!entry) return res.status(404).json({ success: false, message: 'לא נמצא' });
+  db.prepare("UPDATE waiting_list SET status = 'cancelled' WHERE id = ?").run(req.params.id);
+  res.json({ success: true });
+};
+
+const confirmWaitlistEntry = (req, res) => {
+  const { token } = req.params;
+  const db = getDb();
+
+  const entry = db.prepare(`
+    SELECT wl.*, u.name AS customer_name, u.email AS customer_email,
+           s.name AS service_name, s.duration_minutes,
+           w.name AS worker_name, w.email AS worker_email
+    FROM waiting_list wl
+    JOIN users u ON wl.customer_id = u.id
+    JOIN services s ON wl.service_id = s.id
+    LEFT JOIN users w ON wl.worker_id = w.id
+    WHERE wl.notify_token = ? AND wl.status = 'notified'
+  `).get(token);
+
+  if (!entry) {
+    return res.status(400).json({ success: false, message: 'קישור לא תקף' });
+  }
+  if (new Date(entry.expires_at) < new Date()) {
+    return res.status(400).json({ success: false, message: 'הזמן לאישור פג — ניתן לחזור לרשימת המתנה' });
+  }
+
+  // Check the slot is still actually available
+  const conflict = db.prepare(`
+    SELECT id FROM appointments
+    WHERE worker_id = ? AND start_time = ? AND status IN ('pending', 'confirmed')
+  `).get(entry.worker_id, entry.slot_time);
+  if (conflict) {
+    return res.status(409).json({ success: false, message: 'השעה כבר נתפסה מחדש' });
+  }
+
+  // Create the appointment
+  const endTime = new Date(new Date(entry.slot_time).getTime() + entry.duration_minutes * 60000).toISOString();
+  const result = db.prepare(`
+    INSERT INTO appointments (business_id, customer_id, worker_id, service_id, start_time, end_time, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'confirmed')
+  `).run(entry.business_id, entry.customer_id, entry.worker_id, entry.service_id, entry.slot_time, endTime);
+
+  db.prepare("UPDATE waiting_list SET status = 'confirmed' WHERE id = ?").run(entry.id);
+
+  sendAppointmentConfirmed({
+    customerEmail: entry.customer_email,
+    customerName: entry.customer_name,
+    workerName: entry.worker_name || '',
+    serviceName: entry.service_name,
+    dateTime: formatDateTime(entry.slot_time),
+  });
+
+  return res.json({ success: true, message: 'התור אושר בהצלחה!', appointmentId: result.lastInsertRowid });
+};
+
+module.exports = { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule, addToWaitlist, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntry };

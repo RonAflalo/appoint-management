@@ -7,3 +7,8 @@ export const bookAppointment = (data) => api.post('/appointments', data).then(r 
 export const getMyAppointments = () => api.get('/appointments/mine').then(r => r.data);
 export const cancelAppointment = (id) => api.put(`/appointments/${id}/cancel`).then(r => r.data);
 export const acceptReschedule = (id) => api.put(`/appointments/${id}/accept-reschedule`).then(r => r.data);
+
+export const addToWaitlist = (data) => api.post('/waitlist', data).then(r => r.data);
+export const getMyWaitlist = () => api.get('/waitlist').then(r => r.data);
+export const cancelWaitlistEntry = (id) => api.delete(`/waitlist/${id}`).then(r => r.data);
+export const confirmWaitlistEntry = (token) => api.post(`/waitlist/confirm/${token}`).then(r => r.data);

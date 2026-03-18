@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMyAppointments, cancelAppointment, acceptReschedule } from '../../api/user';
+import { getMyAppointments, cancelAppointment, acceptReschedule, getMyWaitlist, cancelWaitlistEntry } from '../../api/user';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatDateTime, isFuture } from '../../utils/dateUtils';
@@ -8,10 +8,12 @@ import { useToast } from '../../hooks/useToast';
 const TABS = [
   { value: 'upcoming', label: 'עתידיים' },
   { value: 'past', label: 'עבר' },
+  { value: 'waitlist', label: 'רשימת המתנה' },
 ];
 
 export default function CustomerMyAppointments() {
   const [appointments, setAppointments] = useState([]);
+  const [waitlist, setWaitlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('upcoming');
   const [busy, setBusy] = useState(null);
@@ -19,8 +21,9 @@ export default function CustomerMyAppointments() {
 
   const load = async () => {
     try {
-      const data = await getMyAppointments();
-      setAppointments(data.appointments || []);
+      const [apptData, wlData] = await Promise.all([getMyAppointments(), getMyWaitlist()]);
+      setAppointments(apptData.appointments || []);
+      setWaitlist(wlData.waitlist || []);
     } catch {
       addToast('שגיאה בטעינת התורים', 'error');
     } finally {
@@ -65,8 +68,19 @@ export default function CustomerMyAppointments() {
     withBusy(id, () => acceptReschedule(id), 'המועד החדש אושר! ✅');
   };
 
+  const handleCancelWaitlist = (id) => {
+    if (!confirm('להסיר את עצמך מרשימת ההמתנה?')) return;
+    withBusy(id, () => cancelWaitlistEntry(id), 'הוסרת מרשימת ההמתנה');
+  };
+
   const canCancel = (appt) =>
     isFuture(appt.start_time) && ['pending', 'confirmed', 'reschedule_requested'].includes(appt.status);
+
+  const tabCount = (tabValue) => {
+    if (tabValue === 'upcoming') return upcomingAppointments.length;
+    if (tabValue === 'past') return pastAppointments.length;
+    return waitlist.length;
+  };
 
   return (
     <div>
@@ -87,15 +101,71 @@ export default function CustomerMyAppointments() {
             {tab.label}
             <span className={`me-2 text-xs px-1.5 py-0.5 rounded-full
               ${activeTab === tab.value ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
-              {tab.value === 'upcoming' ? upcomingAppointments.length : pastAppointments.length}
+              {tabCount(tab.value)}
             </span>
           </button>
         ))}
       </div>
 
-      {loading ? (
+      {/* Waitlist tab */}
+      {activeTab === 'waitlist' && !loading && (
+        <div>
+          {waitlist.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+              <span className="text-5xl mb-4 block">⏳</span>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">אינך ברשימת המתנה</h3>
+              <p className="text-gray-500 text-sm">כשתגיע לשעה תפוסה תוכל להצטרף לרשימת ההמתנה</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {waitlist.map(entry => (
+                <div key={entry.id} className="bg-white rounded-xl shadow-sm border border-amber-100 p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-lg">{entry.service_name}</h3>
+                      <p className="text-gray-500 text-sm">{entry.business_name}</p>
+                      {entry.worker_name && (
+                        <p className="text-gray-500 text-sm">עם {entry.worker_name}</p>
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full
+                      ${entry.status === 'notified'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-amber-100 text-amber-700'}`}>
+                      {entry.status === 'notified' ? 'ממתין לאישורך' : 'בהמתנה'}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-4">
+                    <span>📅 </span>
+                    {new Date(entry.slot_time).toLocaleString('he-IL', {
+                      weekday: 'long', day: 'numeric', month: 'long',
+                      hour: '2-digit', minute: '2-digit',
+                    })}
+                  </div>
+                  {entry.status === 'notified' && entry.expires_at && (
+                    <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800">
+                      <span className="font-semibold">התור זמין!</span> יש לך עד{' '}
+                      {new Date(entry.expires_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                      {' '}לאשר דרך המייל שנשלח אליך.
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleCancelWaitlist(entry.id)}
+                    disabled={busy === entry.id}
+                    className="w-full py-2.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    {busy === entry.id ? 'מסיר...' : 'הסר מרשימת ההמתנה'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab !== 'waitlist' && loading ? (
         <LoadingSpinner />
-      ) : displayedAppointments.length === 0 ? (
+      ) : activeTab !== 'waitlist' && !loading && displayedAppointments.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
           <span className="text-5xl mb-4 block">{activeTab === 'upcoming' ? '📅' : '📋'}</span>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -105,7 +175,7 @@ export default function CustomerMyAppointments() {
             {activeTab === 'upcoming' ? 'קבע תור חדש עכשיו!' : 'ההיסטוריה שלך תופיע כאן'}
           </p>
         </div>
-      ) : (
+      ) : activeTab !== 'waitlist' ? (
         <div className="space-y-4">
           {displayedAppointments.map(appt => (
             <div key={appt.id} className={`bg-white rounded-xl shadow-sm border p-5 transition-colors
@@ -186,7 +256,7 @@ export default function CustomerMyAppointments() {
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

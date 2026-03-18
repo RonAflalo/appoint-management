@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { getBusinessInfo, getPublicServices, getPublicWorkers, getPublicSlots, getPublicAvailableDays, publicBook } from '../api/public';
+import { addToWaitlist } from '../api/user';
 import { toDateString, formatTime } from '../utils/dateUtils';
 import { useAuth } from '../hooks/useAuth';
 import BusinessSocialLinks from '../components/common/BusinessSocialLinks';
@@ -44,6 +45,8 @@ export default function PublicBooking() {
   const [loadingDays, setLoadingDays] = useState(false);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
+  const [joinedWaitlist, setJoinedWaitlist] = useState(false);
 
   const [selectedService, setSelectedService] = useState(null);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -170,6 +173,20 @@ export default function PublicBooking() {
     }
   };
 
+  const handleJoinWaitlist = async () => {
+    if (!isCustomer || !selectedService || !selectedSlot) return;
+    setJoiningWaitlist(true);
+    setBookingError('');
+    try {
+      await addToWaitlist({ slug, serviceId: selectedService.id, workerId: selectedWorker?.id || null, slotTime: selectedSlot });
+      setJoinedWaitlist(true);
+    } catch (err) {
+      setBookingError(err.response?.data?.message || 'שגיאה בהצטרפות לרשימת המתנה');
+    } finally {
+      setJoiningWaitlist(false);
+    }
+  };
+
   const goNext = () => {
     if (step === 2) {
       fetchUnavailableDays(selectedDate || new Date());
@@ -292,6 +309,36 @@ export default function PublicBooking() {
                 עבור לעמוד הלקוח
               </Link>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (joinedWaitlist) {
+    return (
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full mx-4">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="text-6xl mb-4">⏳</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">נוספת לרשימת המתנה!</h1>
+            <p className="text-gray-500 mb-2">אם השעה תתפנה, נשלח לך אימייל עם קישור לאישור התור.</p>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 my-4 text-right space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">שירות</span>
+                <span className="font-semibold">{selectedService?.name}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">תאריך ושעה</span>
+                <span className="font-semibold">{selectedSlot ? formatTime(selectedSlot) : ''} — {selectedDate?.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg p-3 mb-4">
+              ⏰ לאחר קבלת האימייל יהיו לך 30 דקות לאשר את התור — אחרת ייעבר ללקוח הבא בתור
+            </p>
+            <Link to="/customer" className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors">
+              עבור לעמוד הלקוח
+            </Link>
           </div>
         </div>
       </div>
@@ -639,6 +686,12 @@ export default function PublicBooking() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                   />
                 </div>
+                {selectedSlot && bookedSlots.includes(selectedSlot) && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                    <p className="text-amber-800 font-semibold text-sm">⏳ השעה שבחרת תפוסה</p>
+                    <p className="text-amber-600 text-xs mt-1">הצטרף לרשימת המתנה — אם תתפנה נודיע לך במייל ויהיו לך 30 דקות לאשר</p>
+                  </div>
+                )}
                 {bookingError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">
                     {bookingError}
@@ -665,6 +718,19 @@ export default function PublicBooking() {
                 className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-200 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
               >
                 המשך
+              </button>
+            ) : bookedSlots.includes(selectedSlot) ? (
+              <button
+                onClick={handleJoinWaitlist}
+                disabled={joiningWaitlist || !isCustomer}
+                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+              >
+                {joiningWaitlist ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    מצטרף...
+                  </>
+                ) : '⏳ הצטרף לרשימת המתנה'}
               </button>
             ) : (
               <button

@@ -112,6 +112,28 @@ function initializeDatabase(overridePath) {
   try { db.exec("ALTER TABLE businesses ADD COLUMN instagram_url TEXT"); } catch (_) {}
   try { db.exec("ALTER TABLE businesses ADD COLUMN facebook_url TEXT"); } catch (_) {}
 
+  // Waiting list
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS waiting_list (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        business_id INTEGER NOT NULL REFERENCES businesses(id),
+        customer_id INTEGER NOT NULL REFERENCES users(id),
+        service_id INTEGER NOT NULL REFERENCES services(id),
+        worker_id INTEGER REFERENCES users(id),
+        slot_time TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'waiting',
+        notify_token TEXT,
+        notified_at TEXT,
+        expires_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  } catch (_) {}
+  try { db.exec("ALTER TABLE waiting_list ADD COLUMN notify_token TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE waiting_list ADD COLUMN notified_at TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE waiting_list ADD COLUMN expires_at TEXT"); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }
