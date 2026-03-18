@@ -6,6 +6,34 @@ function formatTimeMinutes(totalMinutes) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
+function getPossibleSlots({ workerId, serviceId, date, businessId }) {
+  const db = getDb();
+  const business = db.prepare('SELECT working_hours_json FROM businesses WHERE id = ?').get(businessId);
+  if (!business) return [];
+  const workingHours = JSON.parse(business.working_hours_json);
+  const dayOfWeek = new Date(date + 'T00:00:00').getDay();
+  let dayHours = workingHours[String(dayOfWeek)];
+  const override = db.prepare('SELECT * FROM availability_overrides WHERE worker_id = ? AND date = ?').get(workerId, date);
+  if (override) {
+    if (override.is_blocked) return [];
+    if (override.custom_start && override.custom_end) dayHours = { start: override.custom_start, end: override.custom_end };
+  }
+  if (!dayHours) return [];
+  const service = db.prepare('SELECT duration_minutes FROM services WHERE id = ?').get(serviceId);
+  if (!service) return [];
+  const duration = service.duration_minutes;
+  function timeToMinutes(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+  const dayStart = timeToMinutes(dayHours.start);
+  const dayEnd = timeToMinutes(dayHours.end);
+  const slots = [];
+  let current = dayStart;
+  while (current + duration <= dayEnd) {
+    slots.push(`${date}T${formatTimeMinutes(current)}:00`);
+    current += duration;
+  }
+  return slots;
+}
+
 function getAvailableSlots({ workerId, serviceId, date, businessId }) {
   const db = getDb();
 
@@ -92,4 +120,4 @@ function getAvailableSlots({ workerId, serviceId, date, businessId }) {
   return slots;
 }
 
-module.exports = { getAvailableSlots, formatTimeMinutes };
+module.exports = { getAvailableSlots, getPossibleSlots, formatTimeMinutes };

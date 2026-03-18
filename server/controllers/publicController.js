@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { getDb } = require('../db/database');
-const { getAvailableSlots } = require('../utils/slots');
+const { getAvailableSlots, getPossibleSlots } = require('../utils/slots');
 const { formatDateTime } = require('../utils/dateFormat');
 const { sendNewBookingToWorker } = require('../services/emailService');
 
@@ -46,27 +46,32 @@ const getPublicSlots = (req, res) => {
   const businessId = req.business.id;
 
   if (workerId) {
-    const slots = getAvailableSlots({ workerId: Number(workerId), serviceId: Number(serviceId), date, businessId });
-    return res.json({ success: true, slots });
+    const wId = Number(workerId), sId = Number(serviceId);
+    const slots = getAvailableSlots({ workerId: wId, serviceId: sId, date, businessId });
+    const possible = getPossibleSlots({ workerId: wId, serviceId: sId, date, businessId });
+    const bookedSlots = possible.filter(s => !slots.includes(s));
+    return res.json({ success: true, slots, bookedSlots });
   }
 
   const workers = db.prepare(`
     SELECT id FROM users WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1
   `).all(businessId);
 
-  const allSlots = {};
+  const possibleSet = {};
+  const availableSlots = {};
   for (const worker of workers) {
-    const workerSlots = getAvailableSlots({ workerId: worker.id, serviceId: Number(serviceId), date, businessId });
-    for (const slot of workerSlots) {
-      if (!allSlots[slot]) {
-        allSlots[slot] = [];
-      }
-      allSlots[slot].push(worker.id);
+    const possible = getPossibleSlots({ workerId: worker.id, serviceId: Number(serviceId), date, businessId });
+    const available = getAvailableSlots({ workerId: worker.id, serviceId: Number(serviceId), date, businessId });
+    for (const slot of possible) possibleSet[slot] = true;
+    for (const slot of available) {
+      if (!availableSlots[slot]) availableSlots[slot] = [];
+      availableSlots[slot].push(worker.id);
     }
   }
 
-  const slots = Object.keys(allSlots).sort();
-  return res.json({ success: true, slots, slotWorkers: allSlots });
+  const slots = Object.keys(availableSlots).sort();
+  const bookedSlots = Object.keys(possibleSet).filter(s => !availableSlots[s]).sort();
+  return res.json({ success: true, slots, slotWorkers: availableSlots, bookedSlots });
 };
 
 const getPublicAvailableDays = (req, res) => {

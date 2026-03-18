@@ -36,6 +36,7 @@ export default function PublicBooking() {
   const [services, setServices] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [slots, setSlots] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
   const [unavailableDates, setUnavailableDates] = useState(new Set());
 
   const [loadingData, setLoadingData] = useState(false);
@@ -101,12 +102,14 @@ export default function PublicBooking() {
     if (!selectedService) return;
     setLoadingSlots(true);
     setSlots([]);
+    setBookedSlots([]);
     setSelectedSlot(null);
     try {
       const params = { serviceId: selectedService.id, date: toDateString(date) };
       if (selectedWorker) params.workerId = selectedWorker.id;
       const data = await getPublicSlots(slug, params);
       setSlots(data.slots || []);
+      setBookedSlots(data.bookedSlots || []);
     } catch (_) {
     } finally {
       setLoadingSlots(false);
@@ -283,11 +286,10 @@ export default function PublicBooking() {
                 </a>
               )}
               <Link
-                to={`/book/${slug}`}
-                onClick={() => { setBooked(false); setStep(0); setSelectedService(null); setSelectedWorker(null); setSelectedDate(null); setSelectedSlot(null); setGuestName(''); setGuestEmail(''); setNotes(''); }}
-                className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+                to="/customer"
+                className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors text-center"
               >
-                קביעת תור נוסף
+                עבור לעמוד הלקוח
               </Link>
             </div>
           </div>
@@ -546,16 +548,25 @@ export default function PublicBooking() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
-                    {slots.map(slot => (
-                      <button
-                        key={slot}
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`py-3 rounded-xl text-sm font-medium transition-all border-2
-                          ${selectedSlot === slot ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-gray-100 hover:border-indigo-300 text-gray-700 hover:bg-indigo-50'}`}
-                      >
-                        {formatTime(slot)}
-                      </button>
-                    ))}
+                    {[...slots, ...bookedSlots].sort().map(slot => {
+                      const isTaken = bookedSlots.includes(slot);
+                      return (
+                        <button
+                          key={slot}
+                          onClick={() => setSelectedSlot(slot)}
+                          className={`py-3 rounded-xl text-sm font-medium transition-all border-2
+                            ${selectedSlot === slot
+                              ? 'border-red-500 bg-red-500 text-white'
+                              : isTaken
+                              ? 'border-red-200 bg-red-50 text-red-400 hover:bg-red-100'
+                              : 'border-gray-100 hover:border-indigo-300 text-gray-700 hover:bg-indigo-50'
+                            }`}
+                        >
+                          {formatTime(slot)}
+                          {isTaken && <span className="block text-xs opacity-70">תפוס</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

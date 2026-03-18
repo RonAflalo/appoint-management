@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAppointments, getWorkers, getSettings } from '../../api/admin';
+import { getAppointments, getWorkers, getSettings, updateAppointmentStatus, requestAdminReschedule } from '../../api/admin';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
+import Modal from '../../components/common/Modal';
 import { formatDateTime, toDateString } from '../../utils/dateUtils';
 import { useToast } from '../../hooks/useToast';
 
@@ -12,6 +13,12 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [slug, setSlug] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [detailAppt, setDetailAppt] = useState(null);
+  const [rescheduleAppt, setRescheduleAppt] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [rescheduleNote, setRescheduleNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -57,6 +64,61 @@ export default function AdminDashboard() {
     { label: 'עובדים פעילים', value: activeWorkers.length, color: 'bg-green-500', icon: '👥' },
     { label: 'לקוחות סה"כ', value: customers.length, color: 'bg-purple-500', icon: '👤' },
   ];
+
+  const handleStatus = async (id, status) => {
+    try {
+      await updateAppointmentStatus(id, status);
+      addToast(status === 'confirmed' ? 'התור אושר' : status === 'cancelled' ? 'התור בוטל' : 'הסטטוס עודכן');
+      setDetailAppt(prev => prev?.id === id ? { ...prev, status } : prev);
+      const apptData = await getAppointments({});
+      setAppointments(apptData.appointments || []);
+    } catch {
+      addToast('שגיאה בעדכון סטטוס', 'error');
+    }
+  };
+
+  const openReschedule = (appt, e) => {
+    e?.stopPropagation();
+    setRescheduleAppt(appt);
+    setRescheduleDate(toDateString(new Date()));
+    setRescheduleTime('');
+    setRescheduleNote('');
+  };
+
+  const handleReschedule = async (e) => {
+    e.preventDefault();
+    if (!rescheduleDate || !rescheduleTime) { addToast('יש לבחור תאריך ושעה', 'error'); return; }
+    setSubmitting(true);
+    try {
+      await requestAdminReschedule(rescheduleAppt.id, { suggested_time: `${rescheduleDate}T${rescheduleTime}:00`, note: rescheduleNote || undefined });
+      addToast('בקשת שינוי המועד נשלחה ללקוח');
+      setRescheduleAppt(null);
+      const apptData = await getAppointments({});
+      setAppointments(apptData.appointments || []);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'שגיאה בשליחת הבקשה', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const ActionButtons = ({ appt }) => (
+    <div className="flex items-center gap-1.5 flex-wrap" onClick={e => e.stopPropagation()}>
+      {appt.status === 'pending' && (<>
+        <button onClick={() => handleStatus(appt.id, 'confirmed')} className="px-2.5 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors">אשר</button>
+        <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+      </>)}
+      {appt.status === 'confirmed' && (<>
+        <button onClick={() => handleStatus(appt.id, 'completed')} className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors">הושלם</button>
+        <button onClick={(e) => openReschedule(appt, e)} className="px-2.5 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors">שנה מועד</button>
+        <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+      </>)}
+      {appt.status === 'reschedule_requested' && (
+        <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+      )}
+      {(appt.status === 'completed' || appt.status === 'cancelled') && <span className="text-xs text-gray-300">—</span>}
+    </div>
+  );
 
   if (loading) return <LoadingSpinner />;
 
@@ -146,18 +208,23 @@ export default function AdminDashboard() {
                   <th className="px-4 py-3 text-right font-medium">עובד</th>
                   <th className="px-4 py-3 text-right font-medium">שירות</th>
                   <th className="px-4 py-3 text-right font-medium">תאריך ושעה</th>
-                  <th className="px-4 py-3 text-right font-medium">סטטוס</th>
+                  <th className="px-4 py-3 text-right font-medium">פעולות</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {recentAppointments.map(appt => (
-                  <tr key={appt.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{appt.customer_name}</td>
+                  <tr key={appt.id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setDetailAppt(appt)}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{appt.customer_name}</span>
+                        <StatusBadge status={appt.status} />
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-gray-600">{appt.worker_name}</td>
                     <td className="px-4 py-3 text-gray-600">{appt.service_name}</td>
                     <td className="px-4 py-3 text-gray-600">{formatDateTime(appt.start_time)}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={appt.status} />
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <ActionButtons appt={appt} />
                     </td>
                   </tr>
                 ))}
@@ -166,6 +233,71 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Detail Modal */}
+      <Modal isOpen={!!detailAppt} onClose={() => setDetailAppt(null)} title="פרטי תור">
+        {detailAppt && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <StatusBadge status={detailAppt.status} />
+              {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
+                <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">מוצע: {formatDateTime(detailAppt.suggested_time)}</span>
+              )}
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
+              <p className="text-xs text-gray-400 font-medium uppercase">לקוח</p>
+              <p className="font-semibold text-gray-900">{detailAppt.customer_name}</p>
+              <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_email}</p>
+              {detailAppt.customer_phone && <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_phone}</p>}
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
+              <p className="text-xs text-gray-400 font-medium uppercase">פרטי התור</p>
+              <div className="grid grid-cols-2 gap-y-2.5 text-sm">
+                <div><p className="text-xs text-gray-400">שירות</p><p className="text-gray-900 font-medium">{detailAppt.service_name}</p></div>
+                <div><p className="text-xs text-gray-400">מחיר</p><p className="text-gray-900 font-medium">₪{detailAppt.price}</p></div>
+                <div><p className="text-xs text-gray-400">משך</p><p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p></div>
+                <div><p className="text-xs text-gray-400">עובד</p><p className="text-gray-900 font-medium">{detailAppt.worker_name}</p></div>
+                <div className="col-span-2"><p className="text-xs text-gray-400">תאריך ושעה</p><p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p></div>
+              </div>
+            </div>
+            {detailAppt.notes && (
+              <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 text-sm text-yellow-800">
+                <p className="text-xs text-yellow-600 font-medium mb-1">הערת לקוח</p>
+                {detailAppt.notes}
+              </div>
+            )}
+            <div className="pt-1"><ActionButtons appt={detailAppt} /></div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reschedule Modal */}
+      <Modal isOpen={!!rescheduleAppt} onClose={() => setRescheduleAppt(null)} title="בקשת שינוי מועד">
+        {rescheduleAppt && (
+          <form onSubmit={handleReschedule} className="space-y-4">
+            <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+              <div>{rescheduleAppt.customer_name} — {rescheduleAppt.service_name}</div>
+              <div className="text-xs text-gray-400 mt-0.5">מועד נוכחי: {formatDateTime(rescheduleAppt.start_time)}</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">תאריך חדש מוצע</label>
+              <input type="date" value={rescheduleDate} min={toDateString(new Date())} onChange={e => setRescheduleDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">שעה חדשה מוצעת</label>
+              <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">הערה ללקוח (אופציונלי)</label>
+              <textarea value={rescheduleNote} onChange={e => setRescheduleNote(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="סיבה לשינוי..." />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button type="submit" disabled={submitting} className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg text-sm font-medium transition-colors">{submitting ? 'שולח...' : 'שלח בקשה ללקוח'}</button>
+              <button type="button" onClick={() => setRescheduleAppt(null)} className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">ביטול</button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
