@@ -12,3 +12,4 @@ export const addToWaitlist = (data) => api.post('/waitlist', data).then(r => r.d
 export const getMyWaitlist = () => api.get('/waitlist').then(r => r.data);
 export const cancelWaitlistEntry = (id) => api.delete(`/waitlist/${id}`).then(r => r.data);
 export const confirmWaitlistEntry = (token) => api.post(`/waitlist/confirm/${token}`).then(r => r.data);
+export const confirmWaitlistEntryInApp = (id) => api.post(`/waitlist/${id}/confirm-in-app`).then(r => r.data);

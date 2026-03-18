@@ -189,7 +189,8 @@ const updateAppointmentStatus = (req, res) => {
   if (status === 'cancelled') {
     sendAppointmentCancelled({ ...emailData, cancelledBy: 'admin' });
     const fullAppt = db.prepare('SELECT business_id, service_id, worker_id, start_time FROM appointments WHERE id = ?').get(id);
-    notifyNextInQueue({ businessId: fullAppt.business_id, serviceId: fullAppt.service_id, slotTime: fullAppt.start_time, workerId: fullAppt.worker_id });
+    notifyNextInQueue({ businessId: fullAppt.business_id, serviceId: fullAppt.service_id, slotTime: fullAppt.start_time, workerId: fullAppt.worker_id })
+      .catch(err => console.error('[Waitlist] notifyNextInQueue failed after admin cancel:', err));
   }
 
   res.json({ success: true, message: 'הסטטוס עודכן' });

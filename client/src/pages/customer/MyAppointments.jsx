@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMyAppointments, cancelAppointment, acceptReschedule, getMyWaitlist, cancelWaitlistEntry } from '../../api/user';
+import { getMyAppointments, cancelAppointment, acceptReschedule, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntryInApp } from '../../api/user';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatDateTime, isFuture } from '../../utils/dateUtils';
@@ -73,6 +73,11 @@ export default function CustomerMyAppointments() {
     withBusy(id, () => cancelWaitlistEntry(id), 'הוסרת מרשימת ההמתנה');
   };
 
+  const handleConfirmWaitlist = (id) => {
+    if (!confirm('לאשר את התור?')) return;
+    withBusy(id, () => confirmWaitlistEntryInApp(id), 'התור אושר בהצלחה! ✅');
+  };
+
   const canCancel = (appt) =>
     isFuture(appt.start_time) && ['pending', 'confirmed', 'reschedule_requested'].includes(appt.status);
 
@@ -143,11 +148,20 @@ export default function CustomerMyAppointments() {
                     })}
                   </div>
                   {entry.status === 'notified' && entry.expires_at && (
-                    <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800">
-                      <span className="font-semibold">התור זמין!</span> יש לך עד{' '}
-                      {new Date(entry.expires_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
-                      {' '}לאשר דרך המייל שנשלח אליך.
-                    </div>
+                    <>
+                      <div className="mb-3 bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800">
+                        <span className="font-semibold">התור זמין!</span> יש לך עד{' '}
+                        {new Date(entry.expires_at.replace(' ', 'T') + 'Z').toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                        {' '}לאשר.
+                      </div>
+                      <button
+                        onClick={() => handleConfirmWaitlist(entry.id)}
+                        disabled={busy === entry.id}
+                        className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors mb-2"
+                      >
+                        {busy === entry.id ? 'מאשר...' : '✓ אשר את התור'}
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => handleCancelWaitlist(entry.id)}

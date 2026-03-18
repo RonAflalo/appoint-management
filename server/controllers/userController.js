@@ -204,7 +204,8 @@ const cancelAppointment = (req, res) => {
     dateTime: formatDateTime(appt.start_time),
   });
 
-  notifyNextInQueue({ businessId: fullAppt.business_id, serviceId: fullAppt.service_id, slotTime: fullAppt.start_time, workerId: fullAppt.worker_id });
+  notifyNextInQueue({ businessId: fullAppt.business_id, serviceId: fullAppt.service_id, slotTime: fullAppt.start_time, workerId: fullAppt.worker_id })
+    .catch(err => console.error('[Waitlist] notifyNextInQueue failed after customer cancel:', err));
 
   res.json({ success: true, message: 'התור בוטל בהצלחה' });
 };
@@ -403,4 +404,60 @@ const confirmWaitlistEntry = (req, res) => {
   return res.json({ success: true, message: 'התור אושר בהצלחה!', appointment });
 };
 
-module.exports = { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule, addToWaitlist, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntry };
+// In-app confirmation: authenticated user confirms their own notified waitlist entry (no token needed)
+const confirmWaitlistEntryInApp = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+
+  const entry = db.prepare(`
+    SELECT wl.*, u.name AS customer_name, u.email AS customer_email,
+           s.name AS service_name, s.duration_minutes,
+           w.name AS worker_name, w.email AS worker_email
+    FROM waiting_list wl
+    JOIN users u ON wl.customer_id = u.id
+    JOIN services s ON wl.service_id = s.id
+    LEFT JOIN users w ON wl.worker_id = w.id
+    WHERE wl.id = ? AND wl.customer_id = ? AND wl.status = 'notified'
+  `).get(id, req.user.id);
+
+  if (!entry) return res.status(404).json({ success: false, message: 'לא נמצאה הזמנה ממתינה' });
+
+  if (new Date(entry.expires_at.replace(' ', 'T') + 'Z') < new Date()) {
+    return res.status(400).json({ success: false, message: 'הזמן לאישור פג — ניתן לחזור לרשימת המתנה' });
+  }
+
+  const conflict = db.prepare(`
+    SELECT id FROM appointments
+    WHERE worker_id = ? AND start_time = ? AND status IN ('pending', 'confirmed')
+  `).get(entry.worker_id, entry.slot_time);
+  if (conflict) return res.status(409).json({ success: false, message: 'השעה כבר נתפסה מחדש' });
+
+  const endTime = new Date(new Date(entry.slot_time).getTime() + entry.duration_minutes * 60000)
+    .toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+  const result = db.prepare(`
+    INSERT INTO appointments (business_id, customer_id, worker_id, service_id, start_time, end_time, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'confirmed')
+  `).run(entry.business_id, entry.customer_id, entry.worker_id, entry.service_id, entry.slot_time, endTime);
+
+  db.prepare("UPDATE waiting_list SET status = 'confirmed' WHERE id = ?").run(id);
+
+  sendAppointmentConfirmed({
+    customerEmail: entry.customer_email,
+    customerName: entry.customer_name,
+    workerName: entry.worker_name || '',
+    serviceName: entry.service_name,
+    dateTime: formatDateTime(entry.slot_time),
+  });
+
+  const appointment = db.prepare(`
+    SELECT a.id, a.start_time, s.name AS service_name, u.name AS worker_name
+    FROM appointments a
+    JOIN services s ON a.service_id = s.id
+    LEFT JOIN users u ON a.worker_id = u.id
+    WHERE a.id = ?
+  `).get(result.lastInsertRowid);
+
+  return res.json({ success: true, message: 'התור אושר בהצלחה!', appointment });
+};
+
+module.exports = { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule, addToWaitlist, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntry, confirmWaitlistEntryInApp };
