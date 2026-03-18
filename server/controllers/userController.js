@@ -1,5 +1,5 @@
 const { getDb } = require('../db/database');
-const { getAvailableSlots } = require('../utils/slots');
+const { getAvailableSlots, getPossibleSlots } = require('../utils/slots');
 const { notifyNextInQueue } = require('../utils/waitlist');
 const { sendNewBookingToWorker, sendAppointmentConfirmed, sendRescheduleAcceptedToWorker, sendAppointmentCancelledByCustomer } = require('../services/emailService');
 const { formatDateTime } = require('../utils/dateFormat');
@@ -39,7 +39,9 @@ const getSlots = (req, res) => {
 
   if (workerId) {
     const slots = getAvailableSlots({ workerId: Number(workerId), serviceId: Number(serviceId), date, businessId });
-    return res.json({ success: true, slots });
+    const possible = getPossibleSlots({ workerId: Number(workerId), serviceId: Number(serviceId), date, businessId });
+    const bookedSlots = possible.filter(s => !slots.includes(s));
+    return res.json({ success: true, slots, bookedSlots });
   }
 
   // No specific worker - get all active workers and merge slots
@@ -48,18 +50,22 @@ const getSlots = (req, res) => {
   `).all(businessId);
 
   const allSlots = {};
+  const possibleSet = {};
   for (const worker of workers) {
     const workerSlots = getAvailableSlots({ workerId: worker.id, serviceId: Number(serviceId), date, businessId });
+    const workerPossible = getPossibleSlots({ workerId: worker.id, serviceId: Number(serviceId), date, businessId });
     for (const slot of workerSlots) {
-      if (!allSlots[slot]) {
-        allSlots[slot] = [];
-      }
+      if (!allSlots[slot]) allSlots[slot] = [];
       allSlots[slot].push(worker.id);
+    }
+    for (const slot of workerPossible) {
+      possibleSet[slot] = true;
     }
   }
 
   const slots = Object.keys(allSlots).sort();
-  return res.json({ success: true, slots, slotWorkers: allSlots });
+  const bookedSlots = Object.keys(possibleSet).filter(s => !allSlots[s]).sort();
+  return res.json({ success: true, slots, slotWorkers: allSlots, bookedSlots });
 };
 
 const getAvailableDays = (req, res) => {
@@ -277,24 +283,31 @@ const acceptReschedule = (req, res) => {
 };
 
 const addToWaitlist = (req, res) => {
-  const { slug, serviceId, workerId, slotTime } = req.body;
-  if (!slug || !serviceId || !slotTime) {
+  const { serviceId, workerId, slotTime, slug } = req.body;
+  if (!serviceId || !slotTime) {
     return res.status(400).json({ success: false, message: 'חסרים פרטים' });
   }
   const db = getDb();
-  const business = db.prepare('SELECT id FROM businesses WHERE slug = ?').get(slug);
-  if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
+
+  // Resolve business: prefer business_id from auth token, fall back to slug
+  let businessId = req.user.business_id;
+  if (!businessId && slug) {
+    const business = db.prepare('SELECT id FROM businesses WHERE slug = ?').get(slug);
+    if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
+    businessId = business.id;
+  }
+  if (!businessId) return res.status(400).json({ success: false, message: 'עסק לא זוהה' });
 
   const existing = db.prepare(`
     SELECT id FROM waiting_list
     WHERE business_id = ? AND customer_id = ? AND service_id = ? AND slot_time = ? AND status IN ('waiting', 'notified')
-  `).get(business.id, req.user.id, serviceId, slotTime);
+  `).get(businessId, req.user.id, serviceId, slotTime);
   if (existing) return res.status(409).json({ success: false, message: 'כבר רשום לרשימת המתנה לשעה זו' });
 
   db.prepare(`
     INSERT INTO waiting_list (business_id, customer_id, service_id, worker_id, slot_time)
     VALUES (?, ?, ?, ?, ?)
-  `).run(business.id, req.user.id, serviceId, workerId || null, slotTime);
+  `).run(businessId, req.user.id, serviceId, workerId || null, slotTime);
 
   return res.json({ success: true, message: 'נוספת לרשימת המתנה' });
 };
@@ -302,7 +315,7 @@ const addToWaitlist = (req, res) => {
 const getMyWaitlist = (req, res) => {
   const db = getDb();
   const entries = db.prepare(`
-    SELECT wl.id, wl.slot_time, wl.status, wl.created_at,
+    SELECT wl.id, wl.slot_time, wl.status, wl.created_at, wl.expires_at,
            s.name AS service_name, s.duration_minutes, s.price,
            b.name AS business_name, b.slug,
            u.name AS worker_name
@@ -313,7 +326,7 @@ const getMyWaitlist = (req, res) => {
     WHERE wl.customer_id = ? AND wl.status IN ('waiting', 'notified')
     ORDER BY wl.slot_time ASC
   `).all(req.user.id);
-  res.json({ success: true, entries });
+  res.json({ success: true, waitlist: entries });
 };
 
 const cancelWaitlistEntry = (req, res) => {

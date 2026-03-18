@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { getPublicServices, getPublicWorkers, getSlots, getAvailableDays, bookAppointment } from '../../api/user';
+import { getPublicServices, getPublicWorkers, getSlots, getAvailableDays, bookAppointment, addToWaitlist } from '../../api/user';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useToast } from '../../hooks/useToast';
 import { toDateString, formatTime, formatDate } from '../../utils/dateUtils';
@@ -14,12 +14,15 @@ export default function CustomerBook() {
   const [services, setServices] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [slots, setSlots] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
   const [unavailableDates, setUnavailableDates] = useState(new Set());
   const [loadingData, setLoadingData] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loadingDays, setLoadingDays] = useState(false);
   const [booking, setBooking] = useState(false);
   const [notes, setNotes] = useState('');
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
+  const [joinedWaitlist, setJoinedWaitlist] = useState(false);
 
   const [selectedService, setSelectedService] = useState(null);
   const [selectedWorker, setSelectedWorker] = useState(null); // null = any
@@ -65,12 +68,14 @@ export default function CustomerBook() {
     if (!selectedService) return;
     setLoadingSlots(true);
     setSlots([]);
+    setBookedSlots([]);
     setSelectedSlot(null);
     try {
       const params = { serviceId: selectedService.id, date: toDateString(date) };
       if (selectedWorker) params.workerId = selectedWorker.id;
       const data = await getSlots(params);
       setSlots(data.slots || []);
+      setBookedSlots(data.bookedSlots || []);
     } catch (e) {
       addToast('שגיאה בטעינת שעות פנויות', 'error');
     } finally {
@@ -126,11 +131,27 @@ export default function CustomerBook() {
     }
   };
 
+  const isBooked = (slot) => bookedSlots.includes(slot);
+
+  const handleJoinWaitlist = async () => {
+    if (!selectedService || !selectedSlot) return;
+    setJoiningWaitlist(true);
+    try {
+      let workerId = selectedWorker?.id || null;
+      await addToWaitlist({ serviceId: selectedService.id, workerId, slotTime: selectedSlot });
+      setJoinedWaitlist(true);
+    } catch (e) {
+      addToast(e.response?.data?.message || 'שגיאה בהצטרפות לרשימת המתנה', 'error');
+    } finally {
+      setJoiningWaitlist(false);
+    }
+  };
+
   const canGoNext = () => {
     if (step === 0) return !!selectedService;
     if (step === 1) return true; // worker is optional
     if (step === 2) return !!selectedDate;
-    if (step === 3) return !!selectedSlot;
+    if (step === 3) return !!selectedSlot && !isBooked(selectedSlot);
     return true;
   };
 
@@ -144,6 +165,22 @@ export default function CustomerBook() {
   };
 
   if (loadingData) return <LoadingSpinner />;
+
+  if (joinedWaitlist) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-5xl mb-4">⏳</div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">נרשמת לרשימת המתנה!</h2>
+        <p className="text-gray-500 text-sm mb-6">אם התור יתפנה נשלח לך מייל עם קישור לאישור — יש לך 30 דקות לאשר.</p>
+        <button
+          onClick={() => navigate('/customer/appointments')}
+          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors"
+        >
+          לתורים שלי
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -307,7 +344,7 @@ export default function CustomerBook() {
           <div>
             {loadingSlots ? (
               <LoadingSpinner />
-            ) : slots.length === 0 ? (
+            ) : slots.length === 0 && bookedSlots.length === 0 ? (
               <div className="text-center py-8">
                 <span className="text-4xl mb-3 block">😔</span>
                 <p className="text-gray-500 font-medium">אין שעות זמינות ביום זה</p>
@@ -320,20 +357,44 @@ export default function CustomerBook() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {slots.map(slot => (
-                  <button
-                    key={slot}
-                    onClick={() => setSelectedSlot(slot)}
-                    className={`py-3 rounded-xl text-sm font-medium transition-all border-2
-                      ${selectedSlot === slot
-                        ? 'border-indigo-500 bg-indigo-500 text-white'
-                        : 'border-gray-100 hover:border-indigo-300 text-gray-700 hover:bg-indigo-50'}`}
-                  >
-                    {formatTime(slot)}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-3 gap-2">
+                  {[...slots, ...bookedSlots].sort().map(slot => {
+                    const taken = isBooked(slot);
+                    const selected = selectedSlot === slot;
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={`py-3 rounded-xl text-sm font-medium transition-all border-2
+                          ${taken
+                            ? selected
+                              ? 'border-red-500 bg-red-500 text-white'
+                              : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                            : selected
+                              ? 'border-indigo-500 bg-indigo-500 text-white'
+                              : 'border-gray-100 hover:border-indigo-300 text-gray-700 hover:bg-indigo-50'}`}
+                      >
+                        <div>{formatTime(slot)}</div>
+                        {taken && <div className="text-xs mt-0.5 opacity-80">תפוס</div>}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedSlot && isBooked(selectedSlot) && (
+                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                    <p className="font-semibold mb-1">השעה הזו תפוסה</p>
+                    <p className="text-amber-700 mb-3">ניתן להצטרף לרשימת המתנה — אם התור יתפנה תקבל הודעה במייל עם 30 דקות לאישור.</p>
+                    <button
+                      onClick={handleJoinWaitlist}
+                      disabled={joiningWaitlist}
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      {joiningWaitlist ? 'מצטרף...' : 'הצטרף לרשימת המתנה'}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
