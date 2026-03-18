@@ -282,6 +282,9 @@ const acceptReschedule = (req, res) => {
   res.json({ success: true, message: 'המועד החדש אושר בהצלחה' });
 };
 
+const normalizeSlotTime = (t) =>
+  new Date(t).toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+
 const addToWaitlist = (req, res) => {
   const { serviceId, workerId, slotTime, slug } = req.body;
   if (!serviceId || !slotTime) {
@@ -298,16 +301,19 @@ const addToWaitlist = (req, res) => {
   }
   if (!businessId) return res.status(400).json({ success: false, message: 'עסק לא זוהה' });
 
+  // Normalize to the same format used by appointments (e.g. "2024-03-18 10:00:00")
+  const normalizedSlot = normalizeSlotTime(slotTime);
+
   const existing = db.prepare(`
     SELECT id FROM waiting_list
     WHERE business_id = ? AND customer_id = ? AND service_id = ? AND slot_time = ? AND status IN ('waiting', 'notified')
-  `).get(businessId, req.user.id, serviceId, slotTime);
+  `).get(businessId, req.user.id, serviceId, normalizedSlot);
   if (existing) return res.status(409).json({ success: false, message: 'כבר רשום לרשימת המתנה לשעה זו' });
 
   db.prepare(`
     INSERT INTO waiting_list (business_id, customer_id, service_id, worker_id, slot_time)
     VALUES (?, ?, ?, ?, ?)
-  `).run(businessId, req.user.id, serviceId, workerId || null, slotTime);
+  `).run(businessId, req.user.id, serviceId, workerId || null, normalizedSlot);
 
   return res.json({ success: true, message: 'נוספת לרשימת המתנה' });
 };
@@ -355,7 +361,7 @@ const confirmWaitlistEntry = (req, res) => {
   if (!entry) {
     return res.status(400).json({ success: false, message: 'קישור לא תקף' });
   }
-  if (new Date(entry.expires_at) < new Date()) {
+  if (new Date(entry.expires_at.replace(' ', 'T') + 'Z') < new Date()) {
     return res.status(400).json({ success: false, message: 'הזמן לאישור פג — ניתן לחזור לרשימת המתנה' });
   }
 
@@ -368,8 +374,9 @@ const confirmWaitlistEntry = (req, res) => {
     return res.status(409).json({ success: false, message: 'השעה כבר נתפסה מחדש' });
   }
 
-  // Create the appointment
-  const endTime = new Date(new Date(entry.slot_time).getTime() + entry.duration_minutes * 60000).toISOString();
+  // Create the appointment (normalize endTime to match appointment format)
+  const endTime = new Date(new Date(entry.slot_time).getTime() + entry.duration_minutes * 60000)
+    .toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
   const result = db.prepare(`
     INSERT INTO appointments (business_id, customer_id, worker_id, service_id, start_time, end_time, status)
     VALUES (?, ?, ?, ?, ?, ?, 'confirmed')
@@ -385,7 +392,15 @@ const confirmWaitlistEntry = (req, res) => {
     dateTime: formatDateTime(entry.slot_time),
   });
 
-  return res.json({ success: true, message: 'התור אושר בהצלחה!', appointmentId: result.lastInsertRowid });
+  const appointment = db.prepare(`
+    SELECT a.id, a.start_time, s.name AS service_name, u.name AS worker_name
+    FROM appointments a
+    JOIN services s ON a.service_id = s.id
+    LEFT JOIN users u ON a.worker_id = u.id
+    WHERE a.id = ?
+  `).get(result.lastInsertRowid);
+
+  return res.json({ success: true, message: 'התור אושר בהצלחה!', appointment });
 };
 
 module.exports = { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule, addToWaitlist, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntry };

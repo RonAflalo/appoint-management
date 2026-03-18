@@ -2,8 +2,16 @@ const crypto = require('crypto');
 const { getDb } = require('../db/database');
 const { sendWaitlistAvailable } = require('../services/emailService');
 
+// Normalize to the same format stored in appointments ("YYYY-MM-DD HH:MM:SS")
+function normalizeSlotTime(t) {
+  return new Date(t).toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+}
+
 async function notifyNextInQueue({ businessId, serviceId, slotTime, workerId }) {
   const db = getDb();
+
+  // Normalize format so it matches what's stored in waiting_list
+  const normalizedSlot = normalizeSlotTime(slotTime);
 
   const next = db.prepare(`
     SELECT wl.id, wl.customer_id, u.name AS customer_name, u.email AS customer_email
@@ -14,12 +22,12 @@ async function notifyNextInQueue({ businessId, serviceId, slotTime, workerId }) 
       AND (wl.worker_id IS NULL OR wl.worker_id = ?)
     ORDER BY wl.created_at ASC
     LIMIT 1
-  `).get(businessId, serviceId, slotTime, workerId);
+  `).get(businessId, serviceId, normalizedSlot, workerId);
 
   if (!next) return;
 
   const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
 
   db.prepare(`
     UPDATE waiting_list
@@ -28,14 +36,13 @@ async function notifyNextInQueue({ businessId, serviceId, slotTime, workerId }) 
   `).run(token, expiresAt, workerId, next.id);
 
   const service = db.prepare('SELECT name FROM services WHERE id = ?').get(serviceId);
-  const business = db.prepare('SELECT slug FROM businesses WHERE id = ?').get(businessId);
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 
-  sendWaitlistAvailable({
+  await sendWaitlistAvailable({
     customerEmail: next.customer_email,
     customerName: next.customer_name,
     serviceName: service?.name || '',
-    slotTime,
+    slotTime: normalizedSlot,
     confirmUrl: `${clientUrl}/waitlist/confirm/${token}`,
   });
 }
