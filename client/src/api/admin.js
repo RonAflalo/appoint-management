@@ -31,6 +31,12 @@ export const toggleStore = () => api.post('/admin/store/toggle').then(r => r.dat
 export const createProduct = (data) => api.post('/admin/store/products', data).then(r => r.data);
 export const updateProduct = (id, data) => api.put(`/admin/store/products/${id}`, data).then(r => r.data);
 export const deleteProduct = (id) => api.delete(`/admin/store/products/${id}`).then(r => r.data);
+export const getRecurringRules = () => api.get('/admin/recurring-rules').then(r => r.data);
+export const createRecurringRule = (data) => api.post('/admin/recurring-rules', data).then(r => r.data);
+export const updateRecurringRule = (id, data) => api.put(`/admin/recurring-rules/${id}`, data).then(r => r.data);
+export const deleteRecurringRule = (id) => api.delete(`/admin/recurring-rules/${id}`).then(r => r.data);
+export const getCalendarStatus = () => api.get('/admin/me/calendar-status').then(r => r.data);
+export const disconnectCalendar = () => api.post('/admin/me/calendar-disconnect').then(r => r.data);
 export const uploadImage = (file) => {
   const form = new FormData();
   form.append('image', file);

@@ -370,4 +370,72 @@ const googleOAuthCallback = async (req, res) => {
   }
 };
 
-module.exports = { register, login, logout, getMe, forgotPassword, resetPassword, verifyEmail, resendVerification, googleOAuth, googleOAuthCallback };
+// ---- Google Calendar OAuth ----
+
+const googleCalendarStates = new Map();
+
+const googleCalendarOAuth = (req, res) => {
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    return res.status(501).json({ success: false, message: 'Google OAuth not configured' });
+  }
+  const state = crypto.randomBytes(16).toString('hex');
+  googleCalendarStates.set(state, { ts: Date.now(), userId: req.user.id });
+
+  const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
+    `${process.env.SERVER_URL || 'http://localhost:3001'}/api/auth/google/calendar/callback`;
+
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/calendar',
+    state,
+    access_type: 'offline',
+    prompt: 'consent',
+  });
+
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+};
+
+const googleCalendarOAuthCallback = async (req, res) => {
+  const { code, state, error } = req.query;
+  const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
+  if (error || !code) return res.redirect(`${CLIENT_URL}/admin/settings?calendar=cancelled`);
+
+  const stateData = googleCalendarStates.get(state);
+  if (!stateData) return res.redirect(`${CLIENT_URL}/admin/settings?calendar=error`);
+  googleCalendarStates.delete(state);
+
+  const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
+    `${process.env.SERVER_URL || 'http://localhost:3001'}/api/auth/google/calendar/callback`;
+
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }).toString(),
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.refresh_token) {
+      console.error('[GCal OAuth] No refresh token:', tokenData);
+      return res.redirect(`${CLIENT_URL}/admin/settings?calendar=error`);
+    }
+    const db = getDb();
+    const expires = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null;
+    db.prepare('UPDATE users SET google_calendar_refresh_token = ?, google_calendar_access_token = ?, google_calendar_token_expires = ? WHERE id = ?')
+      .run(tokenData.refresh_token, tokenData.access_token || null, expires, stateData.userId);
+    res.redirect(`${CLIENT_URL}/admin/settings?calendar=connected`);
+  } catch (err) {
+    console.error('[GCal OAuth] Error:', err);
+    res.redirect(`${CLIENT_URL}/admin/settings?calendar=error`);
+  }
+};
+
+module.exports = { register, login, logout, getMe, forgotPassword, resetPassword, verifyEmail, resendVerification, googleOAuth, googleOAuthCallback, googleCalendarOAuth, googleCalendarOAuthCallback };

@@ -157,6 +157,36 @@ function initializeDatabase(overridePath) {
     `);
   } catch (_) {}
 
+  // Migrate: terms of service
+  try { db.exec("ALTER TABLE businesses ADD COLUMN terms_enabled INTEGER NOT NULL DEFAULT 0"); } catch (_) {}
+  try { db.exec("ALTER TABLE businesses ADD COLUMN terms_text TEXT"); } catch (_) {}
+
+  // Migrate: recurring appointments
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS recurring_rules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        business_id INTEGER NOT NULL REFERENCES businesses(id),
+        customer_id INTEGER NOT NULL REFERENCES users(id),
+        worker_id INTEGER NOT NULL REFERENCES users(id),
+        service_id INTEGER NOT NULL REFERENCES services(id),
+        day_of_week INTEGER NOT NULL,
+        time TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  } catch (_) {}
+  try { db.exec("ALTER TABLE appointments ADD COLUMN recurring_rule_id INTEGER REFERENCES recurring_rules(id)"); } catch (_) {}
+
+  // Migrate: Google Calendar sync
+  try { db.exec("ALTER TABLE users ADD COLUMN google_calendar_refresh_token TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE users ADD COLUMN google_calendar_access_token TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE users ADD COLUMN google_calendar_token_expires TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE appointments ADD COLUMN google_event_id TEXT"); } catch (_) {}
+
   // Migrate: service categories
   try {
     db.exec(`

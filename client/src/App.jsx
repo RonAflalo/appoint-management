@@ -27,6 +27,7 @@ import AdminCustomerDetail from './pages/admin/CustomerDetail';
 import AdminOnboarding from './pages/admin/Onboarding';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminStore from './pages/admin/Store';
+import AdminRecurringRules from './pages/admin/RecurringRules';
 
 // Worker pages
 import WorkerSchedule from './pages/worker/Schedule';
@@ -116,6 +117,11 @@ export default function App() {
       <Route path="/admin/store" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <AdminLayout><AdminStore /></AdminLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/recurring-rules" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminLayout><AdminRecurringRules /></AdminLayout>
         </ProtectedRoute>
       } />
       <Route path="/admin/onboarding" element={

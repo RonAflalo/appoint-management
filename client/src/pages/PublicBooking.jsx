@@ -56,6 +56,7 @@ export default function PublicBooking() {
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [notes, setNotes] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [coverFailed, setCoverFailed] = useState(false);
 
@@ -130,8 +131,8 @@ export default function PublicBooking() {
   const handleBook = async () => {
     const bookName = isCustomer ? user.name : guestName;
     const bookEmail = isCustomer ? user.email : guestEmail;
-    if (!isCustomer && (!bookName || !bookEmail)) {
-      setBookingError('יש להתחבר או להירשם לפני קביעת תור');
+    if (!bookName || !bookEmail) {
+      setBookingError('יש להזין שם ואימייל');
       return;
     }
     if (!selectedService || !selectedSlot) return;
@@ -164,6 +165,7 @@ export default function PublicBooking() {
         notes: notes || undefined,
         guestName: bookName,
         guestEmail: bookEmail,
+        terms_accepted: termsAccepted,
       });
       setBooked(true);
     } catch (err) {
@@ -201,6 +203,13 @@ export default function PublicBooking() {
     if (step === 2) return true;
     if (step === 3) return !!selectedDate;
     if (step === 4) return !!selectedSlot;
+    // step 5: guest details required, terms if enabled
+    if (step === 5) {
+      const hasName = isCustomer ? true : !!guestName.trim();
+      const hasEmail = isCustomer ? true : !!guestEmail.trim();
+      const hasTerms = !business?.terms_enabled || termsAccepted;
+      return hasName && hasEmail && hasTerms;
+    }
     return true;
   };
 
@@ -656,22 +665,37 @@ export default function PublicBooking() {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center space-y-3">
-                    <p className="text-amber-800 font-semibold text-sm">נדרש חשבון לקביעת תור</p>
-                    <p className="text-gray-500 text-xs">יש להתחבר או להירשם כדי לקבוע תור</p>
-                    <div className="flex gap-3 justify-center mt-2">
-                      <Link
-                        to={`/register?slug=${slug}`}
-                        className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
-                      >
-                        הרשמה
-                      </Link>
-                      <Link
-                        to={`/login?redirect=/book/${slug}`}
-                        className="bg-white border border-indigo-300 text-indigo-600 px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors"
-                      >
-                        כניסה
-                      </Link>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-700">פרטי ההזמנה</p>
+                      <span className="text-xs text-gray-400">
+                        יש לך חשבון?{' '}
+                        <Link to={`/login?redirect=/book/${slug}`} className="text-indigo-600 font-medium underline">
+                          כניסה
+                        </Link>
+                      </span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">שם מלא *</label>
+                      <input
+                        type="text"
+                        value={guestName}
+                        onChange={e => setGuestName(e.target.value)}
+                        placeholder="ישראל ישראלי"
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">אימייל *</label>
+                      <input
+                        type="email"
+                        value={guestEmail}
+                        onChange={e => setGuestEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        dir="ltr"
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">ישלח אישור תור + קישור להגדרת סיסמה</p>
                     </div>
                   </div>
                 )}
@@ -686,6 +710,23 @@ export default function PublicBooking() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                   />
                 </div>
+                {business?.terms_enabled && business?.terms_text && (
+                  <div className="border border-gray-200 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-gray-700 mb-2">תנאי שימוש</p>
+                    <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 max-h-32 overflow-y-auto mb-3 whitespace-pre-wrap">
+                      {business.terms_text}
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={e => setTermsAccepted(e.target.checked)}
+                        className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-gray-700">קראתי ואני מסכים/ה לתנאי השימוש</span>
+                    </label>
+                  </div>
+                )}
                 {selectedSlot && bookedSlots.includes(selectedSlot) && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
                     <p className="text-amber-800 font-semibold text-sm">⏳ השעה שבחרת תפוסה</p>
@@ -735,7 +776,7 @@ export default function PublicBooking() {
             ) : (
               <button
                 onClick={handleBook}
-                disabled={booking || !isCustomer}
+                disabled={booking || !canGoNext()}
                 className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
               >
                 {booking ? (

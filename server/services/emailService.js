@@ -219,6 +219,21 @@ async function sendWaitlistAvailable({ customerEmail, customerName, serviceName,
   );
 }
 
+async function sendGuestWelcomeEmail({ email, name, setPasswordUrl, serviceName, dateTime }) {
+  await sendEmail(
+    email,
+    '✅ התור נקבע — הגדר סיסמה לחשבון שלך',
+    wrap('התור נקבע בהצלחה!', `
+      <p style="color:#374151;margin-bottom:16px">שלום ${name},<br>התור שלך ל<strong>${serviceName}</strong> נקבע לתאריך <strong>${dateTime}</strong>.</p>
+      <p style="color:#374151;margin-bottom:16px">כדי לנהל את התורים שלך ולקבוע תורים עתידיים בקלות, הגדר סיסמה לחשבונך:</p>
+      <a href="${setPasswordUrl}" style="display:inline-block;background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin-bottom:16px">
+        הגדר סיסמה לחשבון
+      </a>
+      <p style="color:#6b7280;font-size:12px;margin-top:16px">הקישור תקף ל-7 ימים. אם לא קבעת תור, התעלם מהודעה זו.</p>
+    `)
+  );
+}
+
 async function sendRescheduleAcceptedToWorker({ workerEmail, workerName, customerName, serviceName, dateTime }) {
   await sendEmail(
     workerEmail,
@@ -235,6 +250,7 @@ async function sendRescheduleAcceptedToWorker({ workerEmail, workerName, custome
 
 module.exports = {
   verifyEmailConnection,
+  sendGuestWelcomeEmail,
   sendWaitlistAvailable,
   sendAppointmentConfirmed,
   sendAppointmentCancelled,

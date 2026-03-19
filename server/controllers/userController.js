@@ -1,4 +1,5 @@
 const { getDb } = require('../db/database');
+const { createCalendarEvent } = require('../services/googleCalendarService');
 const { getAvailableSlots, getPossibleSlots } = require('../utils/slots');
 const { notifyNextInQueue } = require('../utils/waitlist');
 const { sendNewBookingToWorker, sendAppointmentConfirmed, sendRescheduleAcceptedToWorker, sendAppointmentCancelledByCustomer } = require('../services/emailService');
@@ -100,12 +101,18 @@ const getAvailableDays = (req, res) => {
 };
 
 const bookAppointment = (req, res) => {
-  const { workerId, serviceId, start_time, notes } = req.body;
+  const { workerId, serviceId, start_time, notes, terms_accepted } = req.body;
   if (!workerId || !serviceId || !start_time) {
     return res.status(400).json({ success: false, message: 'יש למלא את כל השדות הנדרשים' });
   }
 
   const db = getDb();
+
+  // Check terms
+  const biz = db.prepare('SELECT terms_enabled FROM businesses WHERE id = ?').get(req.user.business_id || 1);
+  if (biz?.terms_enabled && !terms_accepted) {
+    return res.status(400).json({ success: false, message: 'יש לאשר את תנאי השימוש' });
+  }
 
   const service = db.prepare('SELECT * FROM services WHERE id = ? AND is_active = 1').get(serviceId);
   if (!service) return res.status(404).json({ success: false, message: 'שירות לא נמצא' });
@@ -151,7 +158,6 @@ const bookAppointment = (req, res) => {
     WHERE a.id = ?
   `).get(result.lastInsertRowid);
 
-  // Notify the worker about the new booking
   sendNewBookingToWorker({
     workerEmail: appointment.worker_email,
     workerName: appointment.worker_name,
@@ -159,6 +165,16 @@ const bookAppointment = (req, res) => {
     serviceName: appointment.service_name,
     dateTime: formatDateTime(appointment.start_time),
   });
+
+  // Google Calendar sync (fire-and-forget)
+  createCalendarEvent(workerId, {
+    start_time: appointment.start_time,
+    end_time: appointment.end_time,
+    service_name: appointment.service_name,
+    customer_name: req.user.name,
+  }).then(eventId => {
+    if (eventId) db.prepare('UPDATE appointments SET google_event_id = ? WHERE id = ?').run(eventId, result.lastInsertRowid);
+  }).catch(() => {});
 
   res.status(201).json({ success: true, appointment });
 };
@@ -483,9 +499,14 @@ const confirmWaitlistEntryInApp = (req, res) => {
 
 const getBusinessPolicy = (req, res) => {
   const db = getDb();
-  const business = db.prepare('SELECT cancellation_hours FROM businesses WHERE id = ?').get(req.user.business_id);
+  const business = db.prepare('SELECT cancellation_hours, terms_enabled, terms_text FROM businesses WHERE id = ?').get(req.user.business_id);
   if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
-  res.json({ success: true, cancellation_hours: business.cancellation_hours || 0 });
+  res.json({
+    success: true,
+    cancellation_hours: business.cancellation_hours || 0,
+    terms_enabled: !!business.terms_enabled,
+    terms_text: business.terms_text || '',
+  });
 };
 
 module.exports = { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule, addToWaitlist, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntry, confirmWaitlistEntryInApp, getBusinessPolicy };

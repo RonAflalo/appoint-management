@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { getPublicServices, getPublicWorkers, getSlots, getAvailableDays, bookAppointment, addToWaitlist } from '../../api/user';
+import { getPublicServices, getPublicWorkers, getSlots, getAvailableDays, bookAppointment, addToWaitlist, getBusinessPolicy } from '../../api/user';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useToast } from '../../hooks/useToast';
 import { toDateString, formatTime, formatDate } from '../../utils/dateUtils';
@@ -21,6 +21,9 @@ export default function CustomerBook() {
   const [loadingDays, setLoadingDays] = useState(false);
   const [booking, setBooking] = useState(false);
   const [notes, setNotes] = useState('');
+  const [termsEnabled, setTermsEnabled] = useState(false);
+  const [termsText, setTermsText] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
   const [joinedWaitlist, setJoinedWaitlist] = useState(false);
 
@@ -33,10 +36,14 @@ export default function CustomerBook() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([getPublicServices(), getPublicWorkers()])
-      .then(([sData, wData]) => {
-        setServices(sData.services || []);
-        setWorkers(wData.workers || []);
+    Promise.allSettled([getPublicServices(), getPublicWorkers(), getBusinessPolicy()])
+      .then(([sRes, wRes, pRes]) => {
+        if (sRes.status === 'fulfilled') setServices(sRes.value.services || []);
+        if (wRes.status === 'fulfilled') setWorkers(wRes.value.workers || []);
+        if (pRes.status === 'fulfilled') {
+          setTermsEnabled(!!pRes.value.terms_enabled);
+          setTermsText(pRes.value.terms_text || '');
+        }
       })
       .catch(() => addToast('שגיאה בטעינת נתונים', 'error'))
       .finally(() => setLoadingData(false));
@@ -121,6 +128,7 @@ export default function CustomerBook() {
         serviceId: selectedService.id,
         start_time: selectedSlot,
         notes: notes || undefined,
+        terms_accepted: termsEnabled ? termsAccepted : undefined,
       });
       addToast('התור נקבע בהצלחה!');
       navigate('/customer/appointments');
@@ -152,6 +160,7 @@ export default function CustomerBook() {
     if (step === 1) return true; // worker is optional
     if (step === 2) return !!selectedDate;
     if (step === 3) return !!selectedSlot && !isBooked(selectedSlot);
+    if (step === 4) return !termsEnabled || termsAccepted;
     return true;
   };
 
@@ -459,6 +468,24 @@ export default function CustomerBook() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               />
             </div>
+
+            {termsEnabled && termsText && (
+              <div className="border border-gray-200 rounded-xl p-4">
+                <p className="text-xs font-semibold text-gray-700 mb-2">תנאי שימוש</p>
+                <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 max-h-32 overflow-y-auto mb-3 whitespace-pre-wrap">
+                  {termsText}
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={e => setTermsAccepted(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                  />
+                  <span className="text-sm text-gray-700">קראתי ואני מסכים/ה לתנאי השימוש</span>
+                </label>
+              </div>
+            )}
           </div>
         )}
       </div>

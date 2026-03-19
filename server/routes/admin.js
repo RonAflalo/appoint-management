@@ -15,6 +15,8 @@ const {
   getAnalytics,
   getStore, toggleStore, createProduct, updateProduct, deleteProduct,
   getCategories, createCategory, updateCategory, deleteCategory,
+  getRecurringRules, createRecurringRule, updateRecurringRule, deleteRecurringRule,
+  getCalendarStatus, disconnectCalendar,
 } = require('../controllers/adminController');
 
 router.use(authenticate, authorize('admin'));
@@ -58,6 +60,14 @@ router.post('/store/toggle', toggleStore);
 router.post('/store/products', createProduct);
 router.put('/store/products/:id', updateProduct);
 router.delete('/store/products/:id', deleteProduct);
+
+router.get('/recurring-rules', getRecurringRules);
+router.post('/recurring-rules', createRecurringRule);
+router.put('/recurring-rules/:id', updateRecurringRule);
+router.delete('/recurring-rules/:id', deleteRecurringRule);
+
+router.get('/me/calendar-status', getCalendarStatus);
+router.post('/me/calendar-disconnect', disconnectCalendar);
 
 router.post('/ai-chat', async (req, res) => {
   const { messages } = req.body;

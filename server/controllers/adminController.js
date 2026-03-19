@@ -334,13 +334,15 @@ const getSettings = (req, res) => {
 };
 
 const updateSettings = (req, res) => {
-  const { name, address, working_hours, description, logo_url, cover_url, phone, instagram_url, facebook_url, cancellation_hours } = req.body;
+  const { name, address, working_hours, description, logo_url, cover_url, phone, instagram_url, facebook_url, cancellation_hours, terms_enabled, terms_text } = req.body;
   const db = getDb();
   const business = db.prepare('SELECT id FROM businesses WHERE id = ?').get(req.user.business_id);
   if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
 
   const workingHoursJson = working_hours ? JSON.stringify(working_hours) : null;
   const cancelHours = cancellation_hours !== undefined ? Number(cancellation_hours) : null;
+  const termsEnabledVal = terms_enabled !== undefined ? (terms_enabled ? 1 : 0) : null;
+  const termsTextVal = terms_text !== undefined ? (terms_text || null) : null;
 
   db.prepare(`
     UPDATE businesses SET
@@ -353,13 +355,15 @@ const updateSettings = (req, res) => {
       phone = COALESCE(?, phone),
       instagram_url = COALESCE(?, instagram_url),
       facebook_url = COALESCE(?, facebook_url),
-      cancellation_hours = COALESCE(?, cancellation_hours)
+      cancellation_hours = COALESCE(?, cancellation_hours),
+      terms_enabled = COALESCE(?, terms_enabled),
+      terms_text = COALESCE(?, terms_text)
     WHERE id = ?
   `).run(
     name ?? null, address ?? null, workingHoursJson,
     description ?? null, logo_url ?? null, cover_url ?? null,
     phone ?? null, instagram_url ?? null, facebook_url ?? null,
-    cancelHours,
+    cancelHours, termsEnabledVal, termsTextVal,
     req.user.business_id
   );
 
@@ -719,6 +723,86 @@ const deleteProduct = (req, res) => {
   res.json({ success: true });
 };
 
+// ---- Recurring Rules ----
+
+const getRecurringRules = (req, res) => {
+  const db = getDb();
+  const rules = db.prepare(`
+    SELECT r.*,
+      c.name AS customer_name, c.email AS customer_email,
+      w.name AS worker_name,
+      s.name AS service_name, s.duration_minutes, s.price
+    FROM recurring_rules r
+    JOIN users c ON r.customer_id = c.id
+    JOIN users w ON r.worker_id = w.id
+    JOIN services s ON r.service_id = s.id
+    WHERE r.business_id = ?
+    ORDER BY c.name, r.day_of_week, r.time
+  `).all(req.user.business_id);
+  res.json({ success: true, rules });
+};
+
+const createRecurringRule = (req, res) => {
+  const { customer_id, worker_id, service_id, day_of_week, time, start_date, end_date } = req.body;
+  if (!customer_id || !worker_id || !service_id || day_of_week === undefined || !time || !start_date) {
+    return res.status(400).json({ success: false, message: 'יש למלא את כל השדות הנדרשים' });
+  }
+  const db = getDb();
+  const result = db.prepare(`
+    INSERT INTO recurring_rules (business_id, customer_id, worker_id, service_id, day_of_week, time, start_date, end_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(req.user.business_id, customer_id, worker_id, service_id, day_of_week, time, start_date, end_date || null);
+  const rule = db.prepare('SELECT * FROM recurring_rules WHERE id = ?').get(result.lastInsertRowid);
+  const { generateAppointmentsForRule } = require('../services/recurringService');
+  const count = generateAppointmentsForRule(rule, db);
+  res.status(201).json({ success: true, rule, appointments_generated: count });
+};
+
+const updateRecurringRule = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const rule = db.prepare('SELECT id FROM recurring_rules WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
+  if (!rule) return res.status(404).json({ success: false, message: 'כלל לא נמצא' });
+  const { is_active, end_date } = req.body;
+  if (is_active === false || is_active === 0) {
+    const israelNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+    const pad = n => String(n).padStart(2, '0');
+    const nowStr = `${israelNow.getFullYear()}-${pad(israelNow.getMonth()+1)}-${pad(israelNow.getDate())} ${pad(israelNow.getHours())}:${pad(israelNow.getMinutes())}:00`;
+    db.prepare(`UPDATE appointments SET status = 'cancelled' WHERE recurring_rule_id = ? AND start_time > ? AND status IN ('pending','confirmed')`).run(id, nowStr);
+  }
+  db.prepare('UPDATE recurring_rules SET is_active = COALESCE(?, is_active), end_date = COALESCE(?, end_date) WHERE id = ?')
+    .run(is_active !== undefined ? (is_active ? 1 : 0) : null, end_date !== undefined ? end_date : null, id);
+  const updated = db.prepare('SELECT * FROM recurring_rules WHERE id = ?').get(id);
+  res.json({ success: true, rule: updated });
+};
+
+const deleteRecurringRule = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const rule = db.prepare('SELECT id FROM recurring_rules WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
+  if (!rule) return res.status(404).json({ success: false, message: 'כלל לא נמצא' });
+  const israelNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+  const pad = n => String(n).padStart(2, '0');
+  const nowStr = `${israelNow.getFullYear()}-${pad(israelNow.getMonth()+1)}-${pad(israelNow.getDate())} ${pad(israelNow.getHours())}:${pad(israelNow.getMinutes())}:00`;
+  db.prepare(`UPDATE appointments SET status = 'cancelled' WHERE recurring_rule_id = ? AND start_time > ? AND status IN ('pending','confirmed')`).run(id, nowStr);
+  db.prepare('UPDATE recurring_rules SET is_active = 0 WHERE id = ?').run(id);
+  res.json({ success: true });
+};
+
+// ---- Google Calendar ----
+
+const getCalendarStatus = (req, res) => {
+  const db = getDb();
+  const user = db.prepare('SELECT google_calendar_refresh_token FROM users WHERE id = ?').get(req.user.id);
+  res.json({ success: true, connected: !!user?.google_calendar_refresh_token });
+};
+
+const disconnectCalendar = (req, res) => {
+  const db = getDb();
+  db.prepare('UPDATE users SET google_calendar_refresh_token = NULL, google_calendar_access_token = NULL, google_calendar_token_expires = NULL WHERE id = ?').run(req.user.id);
+  res.json({ success: true });
+};
+
 module.exports = {
   getWorkers, createWorker, updateWorker, deleteWorker,
   toggleAdminAsWorker,
@@ -732,4 +816,6 @@ module.exports = {
   getAnalytics,
   getStore, toggleStore, createProduct, updateProduct, deleteProduct,
   getCategories, createCategory, updateCategory, deleteCategory,
+  getRecurringRules, createRecurringRule, updateRecurringRule, deleteRecurringRule,
+  getCalendarStatus, disconnectCalendar,
 };

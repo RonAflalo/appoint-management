@@ -2,7 +2,9 @@ const bcrypt = require('bcryptjs');
 const { getDb } = require('../db/database');
 const { getAvailableSlots, getPossibleSlots } = require('../utils/slots');
 const { formatDateTime } = require('../utils/dateFormat');
-const { sendNewBookingToWorker } = require('../services/emailService');
+const crypto = require('crypto');
+const { sendNewBookingToWorker, sendGuestWelcomeEmail } = require('../services/emailService');
+const { createCalendarEvent } = require('../services/googleCalendarService');
 
 const getBusinessInfo = (req, res) => {
   const business = req.business;
@@ -107,7 +109,7 @@ const getPublicAvailableDays = (req, res) => {
 };
 
 const publicBook = (req, res) => {
-  const { workerId, serviceId, start_time, notes, guestName, guestEmail } = req.body;
+  const { workerId, serviceId, start_time, notes, guestName, guestEmail, terms_accepted } = req.body;
 
   if (!workerId || !serviceId || !start_time || !guestName || !guestEmail) {
     return res.status(400).json({ success: false, message: 'יש למלא את כל השדות הנדרשים' });
@@ -115,6 +117,12 @@ const publicBook = (req, res) => {
 
   const db = getDb();
   const businessId = req.business.id;
+
+  // Check terms
+  const biz = db.prepare('SELECT terms_enabled FROM businesses WHERE id = ?').get(businessId);
+  if (biz?.terms_enabled && !terms_accepted) {
+    return res.status(400).json({ success: false, message: 'יש לאשר את תנאי השימוש' });
+  }
 
   const service = db.prepare('SELECT * FROM services WHERE id = ? AND is_active = 1 AND business_id = ?').get(serviceId, businessId);
   if (!service) return res.status(404).json({ success: false, message: 'שירות לא נמצא' });
@@ -124,7 +132,9 @@ const publicBook = (req, res) => {
 
   // Find or create guest user — scoped to this business
   let guestUser = db.prepare('SELECT id, name, email FROM users WHERE email = ? AND business_id = ?').get(guestEmail, businessId);
+  let wasNewGuest = false;
   if (!guestUser) {
+    wasNewGuest = true;
     const randomPassword = bcrypt.hashSync(Math.random().toString(36), 10);
     const result = db.prepare(`
       INSERT INTO users (name, email, password_hash, role, business_id)
@@ -177,6 +187,31 @@ const publicBook = (req, res) => {
     serviceName: appointment.service_name,
     dateTime: formatDateTime(appointment.start_time),
   });
+
+  // Send guest welcome + set-password email for new accounts
+  if (wasNewGuest) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    db.prepare('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?').run(token, expires, guestUser.id);
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    sendGuestWelcomeEmail({
+      email: guestUser.email,
+      name: guestUser.name,
+      setPasswordUrl: `${clientUrl}/reset-password/${token}`,
+      serviceName: appointment.service_name,
+      dateTime: formatDateTime(appointment.start_time),
+    });
+  }
+
+  // Google Calendar sync (fire-and-forget)
+  createCalendarEvent(workerId, {
+    start_time: appointment.start_time,
+    end_time: appointment.end_time,
+    service_name: appointment.service_name,
+    customer_name: guestUser.name,
+  }).then(eventId => {
+    if (eventId) db.prepare('UPDATE appointments SET google_event_id = ? WHERE id = ?').run(eventId, result.lastInsertRowid);
+  }).catch(() => {});
 
   res.status(201).json({ success: true, appointment });
 };
