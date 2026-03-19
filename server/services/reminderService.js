@@ -1,9 +1,10 @@
 const cron = require('node-cron');
 const { getDb } = require('../db/database');
 const { sendReminderEmail } = require('./emailService');
+const { sendAppointmentReminderSms } = require('./smsService');
 const { formatDateTime } = require('../utils/dateFormat');
 
-function sendReminders() {
+async function sendReminders() {
   const db = getDb();
   const now = new Date();
   const windowStart = new Date(now.getTime() + 23.5 * 60 * 60 * 1000);
@@ -14,7 +15,7 @@ function sendReminders() {
   const appointments = db.prepare(`
     SELECT
       a.id, a.start_time,
-      c.name AS customer_name, c.email AS customer_email,
+      c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
       w.name AS worker_name,
       s.name AS service_name
     FROM appointments a
@@ -28,13 +29,28 @@ function sendReminders() {
   `).all(toIso(windowStart), toIso(windowEnd));
 
   for (const appt of appointments) {
+    const dateTime = formatDateTime(appt.start_time);
+
+    // Email reminder
     sendReminderEmail({
       customerEmail: appt.customer_email,
       customerName: appt.customer_name,
       workerName: appt.worker_name,
       serviceName: appt.service_name,
-      dateTime: formatDateTime(appt.start_time),
+      dateTime,
     });
+
+    // WhatsApp / SMS reminder (if customer has a phone number)
+    if (appt.customer_phone) {
+      await sendAppointmentReminderSms({
+        customerPhone: appt.customer_phone,
+        customerName: appt.customer_name,
+        workerName: appt.worker_name,
+        serviceName: appt.service_name,
+        dateTime,
+      });
+    }
+
     db.prepare('UPDATE appointments SET reminder_sent = 1 WHERE id = ?').run(appt.id);
     console.log(`[Reminder] Sent to ${appt.customer_email} for appointment ${appt.id}`);
   }
@@ -46,7 +62,10 @@ function startReminderJob() {
     console.log('[Reminder] Running hourly reminder check...');
     sendReminders();
   });
+  // Also run once immediately on startup
+  console.log('[Reminder] Running initial check on startup...');
+  sendReminders();
   console.log('[Reminder] Reminder cron job started.');
 }
 
-module.exports = { startReminderJob };
+module.exports = { startReminderJob, sendReminders };
