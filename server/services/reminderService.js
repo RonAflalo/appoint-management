@@ -10,7 +10,12 @@ async function sendReminders() {
   const windowStart = new Date(now.getTime() + 23.5 * 60 * 60 * 1000);
   const windowEnd = new Date(now.getTime() + 24.5 * 60 * 60 * 1000);
 
-  const toIso = d => d.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+  // Format as Israeli local time to match how start_time is stored in the DB
+  const toIso = d => {
+    const local = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+    const pad = n => String(n).padStart(2, '0');
+    return `${local.getFullYear()}-${pad(local.getMonth()+1)}-${pad(local.getDate())} ${pad(local.getHours())}:${pad(local.getMinutes())}:${pad(local.getSeconds())}`;
+  };
 
   const appointments = db.prepare(`
     SELECT
