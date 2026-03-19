@@ -170,6 +170,17 @@ const tools = [
     input_schema: { type: 'object', properties: {}, required: [] },
   },
   {
+    name: 'get_category_revenue',
+    description: 'Get revenue and appointment count grouped by service category. Use for questions about which category is most profitable, category performance, or category revenue comparison.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        period: { type: 'string', enum: ['this_week', 'this_month', 'last_month', 'all_time'], description: 'Time period (default all_time)' },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'get_store_info',
     description: 'Get store status and all products with their details. Use for any question about the store, products, prices, or inventory.',
     input_schema: {
@@ -491,6 +502,31 @@ function executeTool(name, input, businessId) {
     query += ' ORDER BY wl.slot_time ASC';
     const entries = db.prepare(query).all(...params);
     return { count: entries.length, entries };
+  }
+
+  if (name === 'get_category_revenue') {
+    const today = israelToday();
+    let dateFilter = '';
+    if (input.period === 'this_week') dateFilter = `AND date(a.start_time) >= date('${today}', '-6 days')`;
+    else if (input.period === 'this_month') dateFilter = `AND strftime('%Y-%m', a.start_time) = '${today.slice(0,7)}'`;
+    else if (input.period === 'last_month') {
+      const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+      d.setMonth(d.getMonth() - 1);
+      dateFilter = `AND strftime('%Y-%m', a.start_time) = '${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}'`;
+    }
+    const rows = db.prepare(`
+      SELECT
+        COALESCE(c.name, 'ללא קטגוריה') AS category_name,
+        COUNT(a.id) AS appointment_count,
+        SUM(s.price) AS total_revenue
+      FROM appointments a
+      JOIN services s ON a.service_id = s.id
+      LEFT JOIN categories c ON s.category_id = c.id
+      WHERE a.business_id = ? AND a.status NOT IN ('cancelled') ${dateFilter}
+      GROUP BY c.id
+      ORDER BY total_revenue DESC
+    `).all(businessId);
+    return rows;
   }
 
   if (name === 'get_categories') {
