@@ -89,7 +89,7 @@ export default function CustomerLayout({ children }) {
       <EmailVerificationBanner />
 
       {/* Main content */}
-      <main className="flex-1 pb-20 md:pb-6 overflow-y-auto pt-14 md:pt-0">
+      <main className="flex-1 pb-20 md:pb-6 overflow-y-auto pt-20 md:pt-0">
         <div className="max-w-2xl mx-auto px-4 py-4 md:py-6">
           {children}
         </div>

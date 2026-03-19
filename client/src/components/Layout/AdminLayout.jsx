@@ -99,7 +99,7 @@ export default function AdminLayout({ children }) {
           </button>
         </header>
         <EmailVerificationBanner />
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 lg:pt-6 pt-16">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 lg:pt-6 pt-20">
           {children}
         </div>
       </main>
