@@ -152,6 +152,17 @@ const tools = [
     },
   },
   {
+    name: 'get_store_info',
+    description: 'Get store status and all products with their details. Use for any question about the store, products, prices, or inventory.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        search: { type: 'string', description: 'Optional product name to search for' },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'get_all_customers',
     description: 'Get all registered customers for this business, including their appointment count and total spent. Use this to answer questions about how many customers there are or to list all customers.',
     input_schema: {
@@ -440,6 +451,16 @@ function executeTool(name, input, businessId) {
     if (appt.status === 'cancelled') return { error: 'התור כבר בוטל' };
     db.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?").run(input.appointment_id);
     return { success: true, message: `התור של ${appt.customer_name} ל${appt.service_name} בתאריך ${appt.start_time} בוטל בהצלחה` };
+  }
+
+  if (name === 'get_store_info') {
+    const business = db.prepare('SELECT store_enabled FROM businesses WHERE id = ?').get(businessId);
+    let query = 'SELECT id, name, description, price, image_url FROM products WHERE business_id = ? AND is_active = 1';
+    const params = [businessId];
+    if (input.search) { query += ' AND name LIKE ?'; params.push(`%${input.search}%`); }
+    query += ' ORDER BY name ASC';
+    const products = db.prepare(query).all(...params);
+    return { store_enabled: !!business?.store_enabled, product_count: products.length, products };
   }
 
   if (name === 'get_all_customers') {
