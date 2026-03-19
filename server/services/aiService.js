@@ -152,6 +152,19 @@ const tools = [
     },
   },
   {
+    name: 'get_waitlist',
+    description: 'Get waiting list entries. Use for questions like: who is on the waitlist, waitlist for a specific date, how many people are waiting, who was notified but hasn\'t confirmed yet, expired waitlist entries.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        date_from: { type: 'string', description: 'Filter by slot date from (YYYY-MM-DD), optional' },
+        date_to: { type: 'string', description: 'Filter by slot date to (YYYY-MM-DD), optional' },
+        status: { type: 'string', enum: ['waiting', 'notified', 'confirmed', 'cancelled'], description: 'Filter by status, optional' },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'get_store_info',
     description: 'Get store status and all products with their details. Use for any question about the store, products, prices, or inventory.',
     input_schema: {
@@ -451,6 +464,28 @@ function executeTool(name, input, businessId) {
     if (appt.status === 'cancelled') return { error: 'התור כבר בוטל' };
     db.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?").run(input.appointment_id);
     return { success: true, message: `התור של ${appt.customer_name} ל${appt.service_name} בתאריך ${appt.start_time} בוטל בהצלחה` };
+  }
+
+  if (name === 'get_waitlist') {
+    let query = `
+      SELECT
+        wl.id, wl.slot_time, wl.status, wl.notified_at, wl.expires_at, wl.created_at,
+        c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
+        s.name AS service_name,
+        w.name AS worker_name
+      FROM waiting_list wl
+      JOIN users c ON wl.customer_id = c.id
+      JOIN services s ON wl.service_id = s.id
+      LEFT JOIN users w ON wl.worker_id = w.id
+      WHERE wl.business_id = ?
+    `;
+    const params = [businessId];
+    if (input.date_from) { query += ' AND date(wl.slot_time) >= ?'; params.push(input.date_from); }
+    if (input.date_to) { query += ' AND date(wl.slot_time) <= ?'; params.push(input.date_to); }
+    if (input.status) { query += ' AND wl.status = ?'; params.push(input.status); }
+    query += ' ORDER BY wl.slot_time ASC';
+    const entries = db.prepare(query).all(...params);
+    return { count: entries.length, entries };
   }
 
   if (name === 'get_store_info') {
