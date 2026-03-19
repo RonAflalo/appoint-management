@@ -114,6 +114,13 @@ const bookAppointment = (req, res) => {
   if (!worker) return res.status(404).json({ success: false, message: 'עובד לא נמצא' });
 
   const startDate = new Date(start_time);
+
+  // Block past bookings
+  const israelNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+  if (startDate <= israelNow) {
+    return res.status(400).json({ success: false, message: 'לא ניתן לקבוע תור בעבר' });
+  }
+
   const endDate = new Date(startDate.getTime() + service.duration_minutes * 60 * 1000);
   const endTime = endDate.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
   const startTimeFormatted = new Date(start_time).toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');

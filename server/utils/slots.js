@@ -1,5 +1,9 @@
 const { getDb } = require('../db/database');
 
+function israelNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+}
+
 function formatTimeMinutes(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -27,8 +31,15 @@ function getPossibleSlots({ workerId, serviceId, date, businessId }) {
   const dayEnd = timeToMinutes(dayHours.end);
   const slots = [];
   let current = dayStart;
+  const now = israelNow();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const isToday = date === todayStr;
+  const nowMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
+
   while (current + duration <= dayEnd) {
-    slots.push(`${date}T${formatTimeMinutes(current)}:00`);
+    if (!isToday || current > nowMinutes) {
+      slots.push(`${date}T${formatTimeMinutes(current)}:00`);
+    }
     current += duration;
   }
   return slots;
@@ -85,9 +96,13 @@ function getAvailableSlots({ workerId, serviceId, date, businessId }) {
   const dayStart = timeToMinutes(dayHours.start);
   const dayEnd = timeToMinutes(dayHours.end);
 
-  // Build list of slots
+  // Build list of slots — filter out past slots if date is today
   const slots = [];
   let current = dayStart;
+  const now = israelNow();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const isToday = date === todayStr;
+  const nowMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
 
   while (current + duration <= dayEnd) {
     const slotStart = current;
@@ -107,8 +122,7 @@ function getAvailableSlots({ workerId, serviceId, date, businessId }) {
       }
     }
 
-    if (!hasOverlap) {
-      // Build ISO datetime string
+    if (!hasOverlap && (!isToday || slotStart > nowMinutes)) {
       const slotTimeStr = formatTimeMinutes(slotStart);
       const isoStr = `${date}T${slotTimeStr}:00`;
       slots.push(isoStr);
