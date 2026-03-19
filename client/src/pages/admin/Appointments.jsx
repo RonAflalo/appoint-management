@@ -24,32 +24,55 @@ function exportCSV(appointments) {
   a.click(); URL.revokeObjectURL(url);
 }
 
-async function exportPDF(appointments) {
-  const { default: jsPDF } = await import('jspdf');
-  const { default: autoTable } = await import('jspdf-autotable');
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+function exportPDF(appointments) {
+  const date = new Date().toLocaleDateString('he-IL');
+  const rows = appointments.map(a => `
+    <tr>
+      <td>${a.customer_name}<br/><small>${a.customer_email}</small>${a.customer_phone ? `<br/><small>${a.customer_phone}</small>` : ''}</td>
+      <td>${a.service_name}</td>
+      <td>${a.worker_name}</td>
+      <td>${formatDateTime(a.start_time)}</td>
+      <td>₪${a.price}</td>
+      <td>${STATUS_LABELS[a.status] || a.status}</td>
+      <td>${a.notes || ''}</td>
+    </tr>
+  `).join('');
 
-  // Header
-  doc.setFontSize(16);
-  doc.text('Appointments Export', 14, 16);
-  doc.setFontSize(10);
-  doc.text(`Generated: ${new Date().toLocaleDateString('he-IL')} | Total: ${appointments.length}`, 14, 23);
+  const html = `
+    <html dir="rtl">
+    <head>
+      <meta charset="UTF-8"/>
+      <style>
+        body { font-family: Arial, sans-serif; direction: rtl; padding: 20px; }
+        h2 { color: #4f46e5; margin-bottom: 4px; }
+        p { color: #666; font-size: 12px; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { background: #4f46e5; color: white; padding: 8px; text-align: right; }
+        td { padding: 7px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+        tr:nth-child(even) td { background: #f5f5ff; }
+        small { color: #888; font-size: 10px; }
+        @media print { body { padding: 0; } }
+      </style>
+    </head>
+    <body>
+      <h2>דוח תורים</h2>
+      <p>תאריך הפקה: ${date} | סה"כ תורים: ${appointments.length}</p>
+      <table>
+        <thead><tr>
+          <th>לקוח</th><th>שירות</th><th>עובד</th>
+          <th>תאריך ושעה</th><th>מחיר</th><th>סטטוס</th><th>הערות</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </body>
+    </html>
+  `;
 
-  autoTable(doc, {
-    startY: 28,
-    head: [['Customer', 'Service', 'Worker', 'Date & Time', 'Price', 'Status', 'Notes']],
-    body: appointments.map(a => [
-      `${a.customer_name}\n${a.customer_email}${a.customer_phone ? '\n' + a.customer_phone : ''}`,
-      a.service_name, a.worker_name, formatDateTime(a.start_time),
-      `₪${a.price}`, STATUS_LABELS[a.status] || a.status, a.notes || '',
-    ]),
-    styles: { fontSize: 8, cellPadding: 3 },
-    headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [245, 245, 255] },
-    columnStyles: { 0: { cellWidth: 45 }, 3: { cellWidth: 35 }, 5: { cellWidth: 22 } },
-  });
-
-  doc.save(`appointments_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.pdf`);
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 500);
 }
 
 const STATUS_OPTIONS = [
