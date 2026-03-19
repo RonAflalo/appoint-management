@@ -13,6 +13,7 @@ const {
   getCustomers, getCustomerDetail, updateCustomerNotes,
   completeOnboarding,
   getAnalytics,
+  getStore, toggleStore, createProduct, updateProduct, deleteProduct,
 } = require('../controllers/adminController');
 
 router.use(authenticate, authorize('admin'));
@@ -45,6 +46,12 @@ router.get('/customers/:id', getCustomerDetail);
 router.put('/customers/:id/notes', updateCustomerNotes);
 router.post('/onboarding/complete', completeOnboarding);
 router.get('/analytics', getAnalytics);
+
+router.get('/store', getStore);
+router.post('/store/toggle', toggleStore);
+router.post('/store/products', createProduct);
+router.put('/store/products/:id', updateProduct);
+router.delete('/store/products/:id', deleteProduct);
 
 router.post('/ai-chat', async (req, res) => {
   const { messages } = req.body;

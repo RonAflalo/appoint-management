@@ -14,6 +14,7 @@ const navItems = [
   { path: '/admin/appointments', label: 'תורים', icon: '📅' },
   { path: '/admin/customers', label: 'לקוחות', icon: '👤' },
   { path: '/admin/analytics', label: 'אנליטיקה', icon: '📊' },
+  { path: '/admin/store', label: 'חנות', icon: '🛍️' },
   { path: '/admin/settings', label: 'הגדרות', icon: '⚙️' },
 ];
 

@@ -22,6 +22,11 @@ export const updateCustomerNotes = (id, notes) => api.put(`/admin/customers/${id
 export const completeOnboarding = () => api.post('/admin/onboarding/complete').then(r => r.data);
 export const getAnalytics = () => api.get('/admin/analytics').then(r => r.data);
 export const sendAiMessage = (messages) => api.post('/admin/ai-chat', { messages }).then(r => r.data);
+export const getStore = () => api.get('/admin/store').then(r => r.data);
+export const toggleStore = () => api.post('/admin/store/toggle').then(r => r.data);
+export const createProduct = (data) => api.post('/admin/store/products', data).then(r => r.data);
+export const updateProduct = (id, data) => api.put(`/admin/store/products/${id}`, data).then(r => r.data);
+export const deleteProduct = (id) => api.delete(`/admin/store/products/${id}`).then(r => r.data);
 export const uploadImage = (file) => {
   const form = new FormData();
   form.append('image', file);

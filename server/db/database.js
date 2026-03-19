@@ -140,6 +140,23 @@ function initializeDatabase(overridePath) {
   // Migrate: admin notes per customer
   try { db.exec("ALTER TABLE users ADD COLUMN admin_notes TEXT"); } catch (_) {}
 
+  // Migrate: store
+  try { db.exec("ALTER TABLE businesses ADD COLUMN store_enabled INTEGER NOT NULL DEFAULT 0"); } catch (_) {}
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        business_id INTEGER NOT NULL REFERENCES businesses(id),
+        name TEXT NOT NULL,
+        description TEXT,
+        price REAL NOT NULL DEFAULT 0,
+        image_url TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

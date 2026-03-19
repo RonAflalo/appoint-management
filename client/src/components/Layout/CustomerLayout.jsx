@@ -4,13 +4,16 @@ import { useToast } from '../../hooks/useToast';
 import { logout } from '../../api/auth';
 import EmailVerificationBanner from '../common/EmailVerificationBanner';
 
-const navItems = [
+const baseNavItems = [
   { path: '/customer', label: 'קביעת תור', icon: '📅', exact: true },
   { path: '/customer/appointments', label: 'התורים שלי', icon: '📋' },
 ];
 
 export default function CustomerLayout({ children }) {
   const { user, setUser } = useAuth();
+  const navItems = user?.business?.store_enabled
+    ? [...baseNavItems, { path: '/customer/store', label: 'חנות', icon: '🛍️' }]
+    : baseNavItems;
   const { addToast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();

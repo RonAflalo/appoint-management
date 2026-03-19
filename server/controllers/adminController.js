@@ -626,6 +626,54 @@ const getWorkersDayDetail = (req, res) => {
   res.json({ success: true, date, isBusinessOpen, workers: workersDetail });
 };
 
+// ---- Store ----
+
+const getStore = (req, res) => {
+  const db = getDb();
+  const business = db.prepare('SELECT store_enabled FROM businesses WHERE id = ?').get(req.user.business_id);
+  const products = db.prepare('SELECT * FROM products WHERE business_id = ? AND is_active = 1 ORDER BY created_at DESC').all(req.user.business_id);
+  res.json({ success: true, store_enabled: !!business.store_enabled, products });
+};
+
+const toggleStore = (req, res) => {
+  const db = getDb();
+  const business = db.prepare('SELECT store_enabled FROM businesses WHERE id = ?').get(req.user.business_id);
+  const newValue = business.store_enabled ? 0 : 1;
+  db.prepare('UPDATE businesses SET store_enabled = ? WHERE id = ?').run(newValue, req.user.business_id);
+  res.json({ success: true, store_enabled: !!newValue });
+};
+
+const createProduct = (req, res) => {
+  const { name, description, price, image_url } = req.body;
+  if (!name || price === undefined) return res.status(400).json({ success: false, message: 'שם ומחיר הם שדות חובה' });
+  const db = getDb();
+  const result = db.prepare(`
+    INSERT INTO products (business_id, name, description, price, image_url)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(req.user.business_id, name, description || null, price, image_url || null);
+  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json({ success: true, product });
+};
+
+const updateProduct = (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, image_url } = req.body;
+  const db = getDb();
+  const product = db.prepare('SELECT id FROM products WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
+  if (!product) return res.status(404).json({ success: false, message: 'מוצר לא נמצא' });
+  db.prepare(`UPDATE products SET name = ?, description = ?, price = ?, image_url = ? WHERE id = ?`)
+    .run(name, description || null, price, image_url || null, id);
+  res.json({ success: true, product: db.prepare('SELECT * FROM products WHERE id = ?').get(id) });
+};
+
+const deleteProduct = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const result = db.prepare('UPDATE products SET is_active = 0 WHERE id = ? AND business_id = ?').run(id, req.user.business_id);
+  if (result.changes === 0) return res.status(404).json({ success: false, message: 'מוצר לא נמצא' });
+  res.json({ success: true });
+};
+
 module.exports = {
   getWorkers, createWorker, updateWorker, deleteWorker,
   toggleAdminAsWorker,
@@ -637,4 +685,5 @@ module.exports = {
   getCustomers, getCustomerDetail, updateCustomerNotes,
   completeOnboarding,
   getAnalytics,
+  getStore, toggleStore, createProduct, updateProduct, deleteProduct,
 };

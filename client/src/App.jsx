@@ -26,6 +26,7 @@ import AdminCustomers from './pages/admin/Customers';
 import AdminCustomerDetail from './pages/admin/CustomerDetail';
 import AdminOnboarding from './pages/admin/Onboarding';
 import AdminAnalytics from './pages/admin/Analytics';
+import AdminStore from './pages/admin/Store';
 
 // Worker pages
 import WorkerSchedule from './pages/worker/Schedule';
@@ -36,6 +37,7 @@ import WorkerAvailability from './pages/worker/Availability';
 import CustomerHome from './pages/customer/Home';
 import CustomerBook from './pages/customer/Book';
 import CustomerMyAppointments from './pages/customer/MyAppointments';
+import CustomerStore from './pages/customer/Store';
 import WaitlistConfirm from './pages/WaitlistConfirm';
 
 // Layouts
@@ -111,6 +113,11 @@ export default function App() {
           <AdminLayout><AdminAnalytics /></AdminLayout>
         </ProtectedRoute>
       } />
+      <Route path="/admin/store" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminLayout><AdminStore /></AdminLayout>
+        </ProtectedRoute>
+      } />
       <Route path="/admin/onboarding" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <AdminOnboarding />
@@ -148,6 +155,11 @@ export default function App() {
       <Route path="/customer/appointments" element={
         <ProtectedRoute allowedRoles={['user']}>
           <CustomerLayout><CustomerMyAppointments /></CustomerLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/customer/store" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <CustomerLayout><CustomerStore /></CustomerLayout>
         </ProtectedRoute>
       } />
 

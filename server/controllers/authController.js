@@ -69,7 +69,7 @@ const register = (req, res) => {
     let business = null;
     if (user.business_id) {
       business = db.prepare(
-        'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address FROM businesses WHERE id = ?'
+        'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address, store_enabled FROM businesses WHERE id = ?'
       ).get(user.business_id);
     }
 
@@ -92,7 +92,7 @@ const register = (req, res) => {
   let business = null;
   if (user.business_id) {
     business = db.prepare(
-      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address FROM businesses WHERE id = ?'
+      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address, store_enabled FROM businesses WHERE id = ?'
     ).get(user.business_id);
   }
 
@@ -131,7 +131,7 @@ const login = (req, res) => {
   let business = null;
   if (user.business_id) {
     business = db.prepare(
-      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address FROM businesses WHERE id = ?'
+      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address, store_enabled FROM businesses WHERE id = ?'
     ).get(user.business_id);
   }
 
@@ -155,7 +155,7 @@ const getMe = (req, res) => {
   let business = null;
   if (user.business_id) {
     business = db.prepare(
-      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address FROM businesses WHERE id = ?'
+      'SELECT name, slug, phone, logo_url, cover_url, description, instagram_url, facebook_url, address, store_enabled FROM businesses WHERE id = ?'
     ).get(user.business_id);
   }
 
