@@ -157,6 +157,19 @@ function initializeDatabase(overridePath) {
     `);
   } catch (_) {}
 
+  // Migrate: service categories
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        business_id INTEGER NOT NULL REFERENCES businesses(id),
+        name TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  } catch (_) {}
+  try { db.exec("ALTER TABLE services ADD COLUMN category_id INTEGER REFERENCES categories(id)"); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

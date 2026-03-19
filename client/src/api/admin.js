@@ -22,6 +22,10 @@ export const updateCustomerNotes = (id, notes) => api.put(`/admin/customers/${id
 export const completeOnboarding = () => api.post('/admin/onboarding/complete').then(r => r.data);
 export const getAnalytics = () => api.get('/admin/analytics').then(r => r.data);
 export const sendAiMessage = (messages) => api.post('/admin/ai-chat', { messages }).then(r => r.data);
+export const getCategories = () => api.get('/admin/categories').then(r => r.data);
+export const createCategory = (data) => api.post('/admin/categories', data).then(r => r.data);
+export const updateCategory = (id, data) => api.put(`/admin/categories/${id}`, data).then(r => r.data);
+export const deleteCategory = (id) => api.delete(`/admin/categories/${id}`).then(r => r.data);
 export const getStore = () => api.get('/admin/store').then(r => r.data);
 export const toggleStore = () => api.post('/admin/store/toggle').then(r => r.data);
 export const createProduct = (data) => api.post('/admin/store/products', data).then(r => r.data);

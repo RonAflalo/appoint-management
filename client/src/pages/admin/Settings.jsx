@@ -90,6 +90,7 @@ export default function AdminSettings() {
   const [instagramUrl, setInstagramUrl] = useState('');
   const [facebookUrl, setFacebookUrl] = useState('');
   const [workingHours, setWorkingHours] = useState(DEFAULT_HOURS);
+  const [cancellationHours, setCancellationHours] = useState(0);
   const { addToast } = useToast();
 
   useEffect(() => {
@@ -104,6 +105,7 @@ export default function AdminSettings() {
       setInstagramUrl(b.instagram_url || '');
       setFacebookUrl(b.facebook_url || '');
       setWorkingHours(b.working_hours || DEFAULT_HOURS);
+      setCancellationHours(b.cancellation_hours ?? 0);
     }).catch(() => {
       addToast('שגיאה בטעינת ההגדרות', 'error');
     }).finally(() => setLoading(false));
@@ -138,6 +140,7 @@ export default function AdminSettings() {
         instagram_url: instagramUrl || null,
         facebook_url: facebookUrl || null,
         working_hours: workingHours,
+        cancellation_hours: Number(cancellationHours),
       });
       addToast('ההגדרות נשמרו בהצלחה');
     } catch (e) {
@@ -257,6 +260,28 @@ export default function AdminSettings() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Cancellation policy */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">מדיניות ביטול</h2>
+          <p className="text-sm text-gray-400 mb-4">מינימום שעות ביטול לפני התור (0 = ביטול חופשי בכל עת)</p>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min="0"
+              max="168"
+              value={cancellationHours}
+              onChange={e => setCancellationHours(e.target.value)}
+              className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <span className="text-sm text-gray-600">שעות לפני התור</span>
+          </div>
+          {cancellationHours > 0 && (
+            <p className="mt-2 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
+              לקוחות לא יוכלו לבטל תור פחות מ-{cancellationHours} שעות לפני המועד
+            </p>
+          )}
         </div>
 
         {/* Working hours */}

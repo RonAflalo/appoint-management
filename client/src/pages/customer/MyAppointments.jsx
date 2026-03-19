@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMyAppointments, cancelAppointment, acceptReschedule, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntryInApp } from '../../api/user';
+import { getMyAppointments, cancelAppointment, acceptReschedule, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntryInApp, getBusinessPolicy } from '../../api/user';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatDateTime, isFuture } from '../../utils/dateUtils';
@@ -14,6 +14,7 @@ const TABS = [
 export default function CustomerMyAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [waitlist, setWaitlist] = useState([]);
+  const [cancellationHours, setCancellationHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('upcoming');
   const [busy, setBusy] = useState(null);
@@ -21,9 +22,16 @@ export default function CustomerMyAppointments() {
 
   const load = async () => {
     try {
-      const [apptData, wlData] = await Promise.all([getMyAppointments(), getMyWaitlist()]);
+      const [apptData, wlData, policyData] = await Promise.all([
+        getMyAppointments(),
+        getMyWaitlist(),
+        getBusinessPolicy().catch(() => null),
+      ]);
       setAppointments(apptData.appointments || []);
       setWaitlist(wlData.waitlist || []);
+      if (policyData?.cancellation_hours !== undefined) {
+        setCancellationHours(policyData.cancellation_hours);
+      }
     } catch {
       addToast('שגיאה בטעינת התורים', 'error');
     } finally {
@@ -80,6 +88,12 @@ export default function CustomerMyAppointments() {
 
   const canCancel = (appt) =>
     isFuture(appt.start_time) && ['pending', 'confirmed', 'reschedule_requested'].includes(appt.status);
+
+  const isCancelBlocked = (appt) => {
+    if (!canCancel(appt) || cancellationHours === 0) return false;
+    const hoursUntil = (new Date(appt.start_time.replace(' ', 'T') + 'Z') - new Date()) / (1000 * 60 * 60);
+    return hoursUntil < cancellationHours;
+  };
 
   const tabCount = (tabValue) => {
     if (tabValue === 'upcoming') return upcomingAppointments.length;
@@ -246,26 +260,34 @@ export default function CustomerMyAppointments() {
                     >
                       {busy === appt.id ? '...' : '✓ אשר מועד חדש'}
                     </button>
-                    <button
-                      onClick={() => handleCancel(appt.id)}
-                      disabled={busy === appt.id}
-                      className="flex-1 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      ✕ בטל תור
-                    </button>
+                    {!isCancelBlocked(appt) && (
+                      <button
+                        onClick={() => handleCancel(appt.id)}
+                        disabled={busy === appt.id}
+                        className="flex-1 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        ✕ בטל תור
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* Regular cancel button for non-reschedule statuses */}
               {canCancel(appt) && appt.status !== 'reschedule_requested' && (
-                <button
-                  onClick={() => handleCancel(appt.id)}
-                  disabled={busy === appt.id}
-                  className="w-full py-2.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-                >
-                  {busy === appt.id ? 'מבטל...' : 'בטל תור'}
-                </button>
+                isCancelBlocked(appt) ? (
+                  <div className="w-full py-2.5 bg-gray-50 border border-gray-200 text-gray-400 rounded-xl text-sm text-center">
+                    ביטול אינו אפשרי (פחות מ-{cancellationHours} שעות לפני התור)
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleCancel(appt.id)}
+                    disabled={busy === appt.id}
+                    className="w-full py-2.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    {busy === appt.id ? 'מבטל...' : 'בטל תור'}
+                  </button>
+                )
               )}
             </div>
           ))}

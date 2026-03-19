@@ -17,10 +17,11 @@ const getBusinessInfo = (req, res) => {
 const getPublicServices = (req, res) => {
   const db = getDb();
   const services = db.prepare(`
-    SELECT id, name, duration_minutes, price
-    FROM services
-    WHERE business_id = ? AND is_active = 1
-    ORDER BY name
+    SELECT s.id, s.name, s.duration_minutes, s.price, s.category_id, c.name AS category_name
+    FROM services s
+    LEFT JOIN categories c ON s.category_id = c.id
+    WHERE s.business_id = ? AND s.is_active = 1
+    ORDER BY c.name NULLS LAST, s.name
   `).all(req.business.id);
   res.json({ success: true, services });
 };

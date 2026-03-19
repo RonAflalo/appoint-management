@@ -14,6 +14,7 @@ const {
   completeOnboarding,
   getAnalytics,
   getStore, toggleStore, createProduct, updateProduct, deleteProduct,
+  getCategories, createCategory, updateCategory, deleteCategory,
 } = require('../controllers/adminController');
 
 router.use(authenticate, authorize('admin'));
@@ -24,6 +25,11 @@ router.patch('/me/worker-toggle', toggleAdminAsWorker);
 router.put('/workers/:id', updateWorker);
 router.delete('/workers/:id', deleteWorker);
 router.get('/workers/:id/availability', getWorkerAvailability);
+
+router.get('/categories', getCategories);
+router.post('/categories', createCategory);
+router.put('/categories/:id', updateCategory);
+router.delete('/categories/:id', deleteCategory);
 
 router.get('/services', getServices);
 router.post('/services', createService);

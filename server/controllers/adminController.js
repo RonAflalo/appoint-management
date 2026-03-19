@@ -63,34 +63,75 @@ const deleteWorker = (req, res) => {
 
 // ---- Services ----
 
+const getCategories = (req, res) => {
+  const db = getDb();
+  const categories = db.prepare('SELECT * FROM categories WHERE business_id = ? ORDER BY name').all(req.user.business_id);
+  res.json({ success: true, categories });
+};
+
+const createCategory = (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'יש לציין שם קטגוריה' });
+  const db = getDb();
+  const result = db.prepare('INSERT INTO categories (business_id, name) VALUES (?, ?)').run(req.user.business_id, name);
+  const category = db.prepare('SELECT * FROM categories WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json({ success: true, category });
+};
+
+const updateCategory = (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'יש לציין שם קטגוריה' });
+  const db = getDb();
+  const cat = db.prepare('SELECT id FROM categories WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
+  if (!cat) return res.status(404).json({ success: false, message: 'קטגוריה לא נמצאה' });
+  db.prepare('UPDATE categories SET name = ? WHERE id = ?').run(name, id);
+  const updated = db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
+  res.json({ success: true, category: updated });
+};
+
+const deleteCategory = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const cat = db.prepare('SELECT id FROM categories WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
+  if (!cat) return res.status(404).json({ success: false, message: 'קטגוריה לא נמצאה' });
+  db.prepare('UPDATE services SET category_id = NULL WHERE category_id = ?').run(id);
+  db.prepare('DELETE FROM categories WHERE id = ?').run(id);
+  res.json({ success: true });
+};
+
 const getServices = (req, res) => {
   const db = getDb();
   const services = db.prepare(`
-    SELECT id, name, duration_minutes, price, is_active
-    FROM services
-    WHERE business_id = ? AND is_active = 1
-    ORDER BY name
+    SELECT s.id, s.name, s.duration_minutes, s.price, s.is_active, s.category_id, c.name AS category_name
+    FROM services s
+    LEFT JOIN categories c ON s.category_id = c.id
+    WHERE s.business_id = ? AND s.is_active = 1
+    ORDER BY c.name NULLS LAST, s.name
   `).all(req.user.business_id);
   res.json({ success: true, services });
 };
 
 const createService = (req, res) => {
-  const { name, duration_minutes, price } = req.body;
+  const { name, duration_minutes, price, category_id } = req.body;
   if (!name || !duration_minutes || price === undefined) {
     return res.status(400).json({ success: false, message: 'יש למלא את כל השדות' });
   }
   const db = getDb();
   const result = db.prepare(`
-    INSERT INTO services (business_id, name, duration_minutes, price)
-    VALUES (?, ?, ?, ?)
-  `).run(req.user.business_id, name, duration_minutes, price);
-  const service = db.prepare('SELECT * FROM services WHERE id = ?').get(result.lastInsertRowid);
+    INSERT INTO services (business_id, name, duration_minutes, price, category_id)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(req.user.business_id, name, duration_minutes, price, category_id || null);
+  const service = db.prepare(`
+    SELECT s.*, c.name AS category_name FROM services s
+    LEFT JOIN categories c ON s.category_id = c.id WHERE s.id = ?
+  `).get(result.lastInsertRowid);
   res.status(201).json({ success: true, service });
 };
 
 const updateService = (req, res) => {
   const { id } = req.params;
-  const { name, duration_minutes, price } = req.body;
+  const { name, duration_minutes, price, category_id } = req.body;
   const db = getDb();
   const service = db.prepare('SELECT id FROM services WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
   if (!service) return res.status(404).json({ success: false, message: 'שירות לא נמצא' });
@@ -99,11 +140,15 @@ const updateService = (req, res) => {
     UPDATE services SET
       name = COALESCE(?, name),
       duration_minutes = COALESCE(?, duration_minutes),
-      price = COALESCE(?, price)
+      price = COALESCE(?, price),
+      category_id = ?
     WHERE id = ?
-  `).run(name ?? null, duration_minutes ?? null, price !== undefined ? price : null, id);
+  `).run(name ?? null, duration_minutes ?? null, price !== undefined ? price : null, category_id !== undefined ? (category_id || null) : null, id);
 
-  const updated = db.prepare('SELECT * FROM services WHERE id = ?').get(id);
+  const updated = db.prepare(`
+    SELECT s.*, c.name AS category_name FROM services s
+    LEFT JOIN categories c ON s.category_id = c.id WHERE s.id = ?
+  `).get(id);
   res.json({ success: true, service: updated });
 };
 
@@ -686,4 +731,5 @@ module.exports = {
   completeOnboarding,
   getAnalytics,
   getStore, toggleStore, createProduct, updateProduct, deleteProduct,
+  getCategories, createCategory, updateCategory, deleteCategory,
 };

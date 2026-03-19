@@ -212,31 +212,53 @@ export default function CustomerBook() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">{STEPS[step]}</h2>
 
         {/* Step 0: Service */}
-        {step === 0 && (
-          <div className="grid grid-cols-1 gap-3">
-            {services.map(service => (
-              <button
-                key={service.id}
-                onClick={() => setSelectedService(service)}
-                className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all text-right
-                  ${selectedService?.id === service.id
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-100 hover:border-gray-300'}`}
-              >
-                <div>
-                  <div className="font-semibold text-gray-900">{service.name}</div>
-                  <div className="text-sm text-gray-500 mt-0.5">{service.duration_minutes} דקות</div>
+        {step === 0 && (() => {
+          const grouped = {};
+          const uncategorized = [];
+          for (const s of services) {
+            if (s.category_id) {
+              if (!grouped[s.category_id]) grouped[s.category_id] = { name: s.category_name, items: [] };
+              grouped[s.category_id].items.push(s);
+            } else {
+              uncategorized.push(s);
+            }
+          }
+          const renderService = (service) => (
+            <button
+              key={service.id}
+              onClick={() => setSelectedService(service)}
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all text-right w-full
+                ${selectedService?.id === service.id
+                  ? 'border-indigo-500 bg-indigo-50'
+                  : 'border-gray-100 hover:border-gray-300'}`}
+            >
+              <div>
+                <div className="font-semibold text-gray-900">{service.name}</div>
+                <div className="text-sm text-gray-500 mt-0.5">{service.duration_minutes} דקות</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-indigo-600">₪{service.price}</div>
+                {selectedService?.id === service.id && <div className="text-indigo-500 text-lg">✓</div>}
+              </div>
+            </button>
+          );
+          const hasCategories = Object.keys(grouped).length > 0;
+          return (
+            <div className="space-y-4">
+              {Object.values(grouped).map(group => (
+                <div key={group.name}>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{group.name}</p>
+                  <div className="grid grid-cols-1 gap-3">{group.items.map(renderService)}</div>
                 </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-indigo-600">₪{service.price}</div>
-                  {selectedService?.id === service.id && (
-                    <div className="text-indigo-500 text-lg">✓</div>
-                  )}
+              ))}
+              {uncategorized.length > 0 && (
+                <div className={hasCategories ? 'pt-1' : ''}>
+                  <div className="grid grid-cols-1 gap-3">{uncategorized.map(renderService)}</div>
                 </div>
-              </button>
-            ))}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
 
         {/* Step 1: Worker */}
         {step === 1 && (
