@@ -34,7 +34,7 @@ export default function CustomerLayout({ children }) {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50" dir="rtl">
       {/* Desktop top navbar */}
-      <header className="hidden md:flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
+      <header className="hidden md:flex sticky top-0 z-30 items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center gap-2">
           {user?.business?.logo_url
             ? <img src={user.business.logo_url} alt={user.business.name} className="h-8 w-8 rounded-lg object-contain" onError={e => e.target.style.display='none'} />
@@ -67,7 +67,7 @@ export default function CustomerLayout({ children }) {
       </header>
 
       {/* Mobile header */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center gap-2">
           {user?.business?.logo_url
             ? <img src={user.business.logo_url} alt={user.business.name} className="h-7 w-7 rounded-lg object-contain" onError={e => e.target.style.display='none'} />

@@ -86,7 +86,7 @@ export default function WorkerLayout({ children }) {
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
           <h1 className="font-bold text-emerald-900">מנהל תורים</h1>
           <button onClick={() => setSidebarOpen(true)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
             <span className="text-xl">☰</span>
