@@ -49,7 +49,9 @@ export default function CustomerStore() {
             onClick={() => setSelected(p)}
           >
             {p.image_url && (
-              <img src={p.image_url} alt={p.name} className="w-full h-48 object-cover" />
+              <div className="w-full h-48 bg-gray-50 flex items-center justify-center overflow-hidden">
+                <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" />
+              </div>
             )}
             <div className="p-4">
               <div className="flex items-start justify-between gap-2">
@@ -72,7 +74,9 @@ export default function CustomerStore() {
             onClick={e => e.stopPropagation()}
           >
             {selected.image_url && (
-              <img src={selected.image_url} alt={selected.name} className="w-full h-56 object-cover" />
+              <div className="w-full bg-gray-50 flex items-center justify-center p-2">
+                <img src={selected.image_url} alt={selected.name} className="max-h-64 w-full object-contain" />
+              </div>
             )}
             <div className="p-5 overflow-y-auto flex-1">
               <div className="flex items-start justify-between gap-2 mb-3">
