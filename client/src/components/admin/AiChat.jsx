@@ -43,20 +43,13 @@ export default function AiChat() {
     }
   };
 
-  const suggestions = [
+  const exampleQuestions = [
     'אילו תורים יש היום?',
     'כמה הרווחנו החודש?',
     'מי הלקוח הכי פעיל?',
-    'אילו תורים קרובים?',
-    'מה הקטגוריות שיש לי?',
     'מה הקטגוריה הכי רווחית שלנו?',
-    'השווה קטגוריות לפי הכנסות',
     'כמה נרוויח החודש הבא?',
-    'מה תחזית ההכנסות לשלושה חודשים קדימה?',
-    'באיזה קצב העסק גדל?',
-    'מה המוצרים בחנות?',
     'מי ברשימת ההמתנה?',
-    'יצא לי לייצא את כל התורים?',
   ];
 
   return (
@@ -85,17 +78,22 @@ export default function AiChat() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ minHeight: '200px' }}>
             {bubbles.length === 0 && (
-              <div className="space-y-2">
-                <p className="text-xs text-gray-400 text-center mb-3">לחץ על שאלה או כתוב בעצמך</p>
-                {suggestions.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => send(s)}
-                    className="w-full text-right text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg transition-colors"
-                  >
-                    {s}
-                  </button>
-                ))}
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500 mb-3">שאל אותי כל שאלה על העסק</p>
+                <details className="text-right">
+                  <summary className="text-xs text-indigo-500 cursor-pointer hover:text-indigo-700 text-center select-none">דוגמאות לשאלות</summary>
+                  <div className="mt-2 space-y-1.5">
+                    {exampleQuestions.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => send(s)}
+                        className="w-full text-right text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </details>
               </div>
             )}
 
