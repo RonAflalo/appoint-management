@@ -6,6 +6,11 @@
   font-family: 'Heebo', 'Assistant', sans-serif;
 }
 
+/* Prevent iOS auto-zoom on input focus */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
 body {
   direction: rtl;
   text-align: right;
