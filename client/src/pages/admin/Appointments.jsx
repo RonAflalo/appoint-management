@@ -6,6 +6,52 @@ import Modal from '../../components/common/Modal';
 import { formatDateTime, toDateString } from '../../utils/dateUtils';
 import { useToast } from '../../hooks/useToast';
 
+const STATUS_LABELS = { pending: 'ממתין', confirmed: 'מאושר', completed: 'הושלם', cancelled: 'בוטל', reschedule_requested: 'שינוי מועד' };
+
+function exportCSV(appointments) {
+  const headers = ['לקוח', 'אימייל', 'טלפון', 'שירות', 'עובד', 'תאריך ושעה', 'מחיר', 'סטטוס', 'הערות'];
+  const rows = appointments.map(a => [
+    a.customer_name, a.customer_email, a.customer_phone || '',
+    a.service_name, a.worker_name, formatDateTime(a.start_time),
+    a.price, STATUS_LABELS[a.status] || a.status, a.notes || '',
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const bom = '\uFEFF'; // UTF-8 BOM for Excel Hebrew support
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `תורים_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+async function exportPDF(appointments) {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  // Header
+  doc.setFontSize(16);
+  doc.text('Appointments Export', 14, 16);
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleDateString('he-IL')} | Total: ${appointments.length}`, 14, 23);
+
+  autoTable(doc, {
+    startY: 28,
+    head: [['Customer', 'Service', 'Worker', 'Date & Time', 'Price', 'Status', 'Notes']],
+    body: appointments.map(a => [
+      `${a.customer_name}\n${a.customer_email}${a.customer_phone ? '\n' + a.customer_phone : ''}`,
+      a.service_name, a.worker_name, formatDateTime(a.start_time),
+      `₪${a.price}`, STATUS_LABELS[a.status] || a.status, a.notes || '',
+    ]),
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 245, 255] },
+    columnStyles: { 0: { cellWidth: 45 }, 3: { cellWidth: 35 }, 5: { cellWidth: 22 } },
+  });
+
+  doc.save(`appointments_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.pdf`);
+}
+
 const STATUS_OPTIONS = [
   { value: '', label: 'כל הסטטוסים' },
   { value: 'pending', label: 'ממתין' },
@@ -155,9 +201,27 @@ export default function AdminAppointments() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">תורים</h1>
-        <p className="text-gray-500 text-sm mt-1">ניהול כל התורים</p>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">תורים</h1>
+          <p className="text-gray-500 text-sm mt-1">ניהול כל התורים</p>
+        </div>
+        {appointments.length > 0 && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => exportCSV(appointments)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              ⬇ CSV
+            </button>
+            <button
+              onClick={() => exportPDF(appointments)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              ⬇ PDF
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
