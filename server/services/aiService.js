@@ -165,6 +165,11 @@ const tools = [
     },
   },
   {
+    name: 'get_categories',
+    description: 'Get all service categories and the services within each category. Use for questions about categories, how services are grouped, or which category a service belongs to.',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
     name: 'get_store_info',
     description: 'Get store status and all products with their details. Use for any question about the store, products, prices, or inventory.',
     input_schema: {
@@ -486,6 +491,22 @@ function executeTool(name, input, businessId) {
     query += ' ORDER BY wl.slot_time ASC';
     const entries = db.prepare(query).all(...params);
     return { count: entries.length, entries };
+  }
+
+  if (name === 'get_categories') {
+    const cats = db.prepare('SELECT id, name FROM categories WHERE business_id = ? ORDER BY name').all(businessId);
+    const result = cats.map(cat => {
+      const services = db.prepare(`
+        SELECT name, duration_minutes, price FROM services
+        WHERE category_id = ? AND is_active = 1 ORDER BY name
+      `).all(cat.id);
+      return { ...cat, services };
+    });
+    const uncategorized = db.prepare(`
+      SELECT name, duration_minutes, price FROM services
+      WHERE business_id = ? AND (category_id IS NULL) AND is_active = 1 ORDER BY name
+    `).all(businessId);
+    return { categories: result, uncategorized };
   }
 
   if (name === 'get_store_info') {
