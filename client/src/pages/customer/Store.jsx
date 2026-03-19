@@ -6,6 +6,7 @@ export default function CustomerStore() {
   const [loading, setLoading] = useState(true);
   const [storeEnabled, setStoreEnabled] = useState(false);
   const [products, setProducts] = useState([]);
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     getCustomerStore()
@@ -42,7 +43,11 @@ export default function CustomerStore() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {products.map(p => (
-          <div key={p.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div
+            key={p.id}
+            className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setSelected(p)}
+          >
             {p.image_url && (
               <img src={p.image_url} alt={p.name} className="w-full h-48 object-cover" />
             )}
@@ -51,11 +56,44 @@ export default function CustomerStore() {
                 <h3 className="font-semibold text-gray-900 text-lg">{p.name}</h3>
                 <span className="font-bold text-indigo-700 text-lg whitespace-nowrap">₪{p.price}</span>
               </div>
-              {p.description && <p className="text-sm text-gray-500 mt-2">{p.description}</p>}
+              {p.description && (
+                <p className="text-sm text-gray-500 mt-2 line-clamp-2">{p.description}</p>
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Product modal */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelected(null)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {selected.image_url && (
+              <img src={selected.image_url} alt={selected.name} className="w-full h-56 object-cover" />
+            )}
+            <div className="p-5 overflow-y-auto flex-1">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <h2 className="text-xl font-bold text-gray-900">{selected.name}</h2>
+                <span className="text-xl font-bold text-indigo-700 whitespace-nowrap">₪{selected.price}</span>
+              </div>
+              {selected.description && (
+                <p className="text-gray-600 text-sm leading-relaxed">{selected.description}</p>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-100">
+              <button
+                onClick={() => setSelected(null)}
+                className="w-full bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                סגור
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
