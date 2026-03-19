@@ -77,6 +77,17 @@ const tools = [
     },
   },
   {
+    name: 'get_all_customers',
+    description: 'Get all registered customers for this business, including their appointment count and total spent. Use this to answer questions about how many customers there are or to list all customers.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        include_no_appointments: { type: 'boolean', description: 'If true, include customers with no appointments or only cancelled appointments (default true)' },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'get_upcoming_appointments',
     description: 'Get all upcoming (future) appointments',
     input_schema: {
@@ -203,6 +214,20 @@ function executeTool(name, input, businessId) {
     if (appt.status === 'cancelled') return { error: 'התור כבר בוטל' };
     db.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?").run(input.appointment_id);
     return { success: true, message: `התור של ${appt.customer_name} ל${appt.service_name} בתאריך ${appt.start_time} בוטל בהצלחה` };
+  }
+
+  if (name === 'get_all_customers') {
+    return db.prepare(`
+      SELECT u.id, u.name, u.email, u.phone, u.created_at,
+             COUNT(a.id) AS appointment_count,
+             SUM(CASE WHEN a.status NOT IN ('cancelled') THEN s.price ELSE 0 END) AS total_spent
+      FROM users u
+      LEFT JOIN appointments a ON a.customer_id = u.id AND a.business_id = ?
+      LEFT JOIN services s ON a.service_id = s.id
+      WHERE u.role = 'user' AND u.business_id = ? AND u.is_active = 1
+      GROUP BY u.id
+      ORDER BY appointment_count DESC
+    `).all(businessId, businessId);
   }
 
   if (name === 'get_upcoming_appointments') {
