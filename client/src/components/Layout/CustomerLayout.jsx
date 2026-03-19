@@ -67,7 +67,7 @@ export default function CustomerLayout({ children }) {
       </header>
 
       {/* Mobile header */}
-      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+      <header className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center gap-2">
           {user?.business?.logo_url
             ? <img src={user.business.logo_url} alt={user.business.name} className="h-7 w-7 rounded-lg object-contain" onError={e => e.target.style.display='none'} />
@@ -89,7 +89,7 @@ export default function CustomerLayout({ children }) {
       <EmailVerificationBanner />
 
       {/* Main content */}
-      <main className="flex-1 pb-20 md:pb-6 overflow-y-auto">
+      <main className="flex-1 pb-20 md:pb-6 overflow-y-auto pt-14 md:pt-0">
         <div className="max-w-2xl mx-auto px-4 py-4 md:py-6">
           {children}
         </div>

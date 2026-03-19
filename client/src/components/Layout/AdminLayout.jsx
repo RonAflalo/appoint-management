@@ -92,14 +92,14 @@ export default function AdminLayout({ children }) {
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+        <header className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
           <h1 className="font-bold text-indigo-900">מנהל תורים</h1>
           <button onClick={() => setSidebarOpen(true)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
             <span className="text-xl">☰</span>
           </button>
         </header>
         <EmailVerificationBanner />
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 lg:pt-6 pt-16">
           {children}
         </div>
       </main>
