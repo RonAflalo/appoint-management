@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { logout } from '../../api/auth';
 import EmailVerificationBanner from '../common/EmailVerificationBanner';
+import AiChat from '../admin/AiChat';
 
 const navItems = [
   { path: '/admin', label: 'דשבורד', icon: '🏠', exact: true },
@@ -103,6 +104,7 @@ export default function AdminLayout({ children }) {
           {children}
         </div>
       </main>
+      <AiChat />
     </div>
   );
 }

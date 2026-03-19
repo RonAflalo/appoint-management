@@ -46,6 +46,21 @@ router.put('/customers/:id/notes', updateCustomerNotes);
 router.post('/onboarding/complete', completeOnboarding);
 router.get('/analytics', getAnalytics);
 
+router.post('/ai-chat', async (req, res) => {
+  const { messages } = req.body;
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ success: false, message: 'messages required' });
+  }
+  try {
+    const { chat } = require('../services/aiService');
+    const reply = await chat(messages, req.user.business_id);
+    res.json({ success: true, reply });
+  } catch (err) {
+    console.error('[AI] Error:', err.message);
+    res.status(500).json({ success: false, message: 'שגיאה בשירות ה-AI' });
+  }
+});
+
 router.post('/test/run-reminders', async (req, res) => {
   const { sendReminders } = require('../services/reminderService');
   await sendReminders();

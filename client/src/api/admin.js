@@ -21,6 +21,7 @@ export const getCustomerDetail = (id) => api.get(`/admin/customers/${id}`).then(
 export const updateCustomerNotes = (id, notes) => api.put(`/admin/customers/${id}/notes`, { notes }).then(r => r.data);
 export const completeOnboarding = () => api.post('/admin/onboarding/complete').then(r => r.data);
 export const getAnalytics = () => api.get('/admin/analytics').then(r => r.data);
+export const sendAiMessage = (messages) => api.post('/admin/ai-chat', { messages }).then(r => r.data);
 export const uploadImage = (file) => {
   const form = new FormData();
   form.append('image', file);
