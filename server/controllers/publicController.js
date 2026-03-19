@@ -121,8 +121,8 @@ const publicBook = (req, res) => {
   const worker = db.prepare("SELECT id, name, email FROM users WHERE id = ? AND (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND is_active = 1 AND business_id = ?").get(workerId, businessId);
   if (!worker) return res.status(404).json({ success: false, message: 'עובד לא נמצא' });
 
-  // Find or create guest user
-  let guestUser = db.prepare('SELECT id, name, email FROM users WHERE email = ?').get(guestEmail);
+  // Find or create guest user — scoped to this business
+  let guestUser = db.prepare('SELECT id, name, email FROM users WHERE email = ? AND business_id = ?').get(guestEmail, businessId);
   if (!guestUser) {
     const randomPassword = bcrypt.hashSync(Math.random().toString(36), 10);
     const result = db.prepare(`
