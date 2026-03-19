@@ -275,12 +275,13 @@ const getSettings = (req, res) => {
 };
 
 const updateSettings = (req, res) => {
-  const { name, address, working_hours, description, logo_url, cover_url, phone, instagram_url, facebook_url } = req.body;
+  const { name, address, working_hours, description, logo_url, cover_url, phone, instagram_url, facebook_url, cancellation_hours } = req.body;
   const db = getDb();
   const business = db.prepare('SELECT id FROM businesses WHERE id = ?').get(req.user.business_id);
   if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
 
   const workingHoursJson = working_hours ? JSON.stringify(working_hours) : null;
+  const cancelHours = cancellation_hours !== undefined ? Number(cancellation_hours) : null;
 
   db.prepare(`
     UPDATE businesses SET
@@ -292,18 +293,99 @@ const updateSettings = (req, res) => {
       cover_url = COALESCE(?, cover_url),
       phone = COALESCE(?, phone),
       instagram_url = COALESCE(?, instagram_url),
-      facebook_url = COALESCE(?, facebook_url)
+      facebook_url = COALESCE(?, facebook_url),
+      cancellation_hours = COALESCE(?, cancellation_hours)
     WHERE id = ?
   `).run(
     name ?? null, address ?? null, workingHoursJson,
     description ?? null, logo_url ?? null, cover_url ?? null,
     phone ?? null, instagram_url ?? null, facebook_url ?? null,
+    cancelHours,
     req.user.business_id
   );
 
   const updated = db.prepare('SELECT * FROM businesses WHERE id = ?').get(req.user.business_id);
   updated.working_hours = JSON.parse(updated.working_hours_json);
   res.json({ success: true, business: updated });
+};
+
+const getAnalytics = (req, res) => {
+  const db = getDb();
+  const businessId = req.user.business_id;
+
+  // Monthly revenue — last 6 months (completed + confirmed appointments)
+  const monthlyRevenue = db.prepare(`
+    SELECT
+      strftime('%Y-%m', a.start_time) AS month,
+      SUM(s.price) AS revenue,
+      COUNT(a.id) AS count
+    FROM appointments a
+    JOIN services s ON a.service_id = s.id
+    WHERE a.business_id = ?
+      AND a.status IN ('completed', 'confirmed')
+      AND a.start_time >= date('now', '-6 months')
+    GROUP BY month
+    ORDER BY month ASC
+  `).all(businessId);
+
+  // Busiest hours (appointments by hour of day)
+  const busiestHours = db.prepare(`
+    SELECT
+      CAST(strftime('%H', a.start_time) AS INTEGER) AS hour,
+      COUNT(*) AS count
+    FROM appointments a
+    WHERE a.business_id = ?
+      AND a.status NOT IN ('cancelled')
+    GROUP BY hour
+    ORDER BY hour ASC
+  `).all(businessId);
+
+  // Top services by appointment count
+  const topServices = db.prepare(`
+    SELECT
+      s.name,
+      COUNT(a.id) AS count,
+      SUM(s.price) AS revenue
+    FROM appointments a
+    JOIN services s ON a.service_id = s.id
+    WHERE a.business_id = ?
+      AND a.status NOT IN ('cancelled')
+    GROUP BY s.id
+    ORDER BY count DESC
+    LIMIT 5
+  `).all(businessId);
+
+  // Customer retention: new vs returning (customers with >1 appointment)
+  const customerStats = db.prepare(`
+    SELECT
+      COUNT(DISTINCT customer_id) AS total_customers,
+      COUNT(DISTINCT CASE WHEN appt_count > 1 THEN customer_id END) AS returning_customers
+    FROM (
+      SELECT customer_id, COUNT(*) AS appt_count
+      FROM appointments
+      WHERE business_id = ? AND status NOT IN ('cancelled')
+      GROUP BY customer_id
+    )
+  `).get(businessId);
+
+  // Total revenue all time
+  const totals = db.prepare(`
+    SELECT
+      COUNT(*) AS total_appointments,
+      SUM(s.price) AS total_revenue
+    FROM appointments a
+    JOIN services s ON a.service_id = s.id
+    WHERE a.business_id = ? AND a.status IN ('completed', 'confirmed')
+  `).get(businessId);
+
+  res.json({
+    success: true,
+    monthlyRevenue,
+    busiestHours,
+    topServices,
+    customerStats,
+    totals,
+  });
 };
 
 const uploadImage = (req, res) => {
@@ -503,4 +585,5 @@ module.exports = {
   getSettings, updateSettings, uploadImage,
   getCustomers,
   completeOnboarding,
+  getAnalytics,
 };

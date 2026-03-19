@@ -177,7 +177,7 @@ const cancelAppointment = (req, res) => {
   const { id } = req.params;
   const db = getDb();
   const appt = db.prepare(`
-    SELECT a.id, a.status, a.start_time,
+    SELECT a.id, a.status, a.start_time, a.business_id,
            c.name AS customer_name,
            w.name AS worker_name, w.email AS worker_email,
            s.name AS service_name
@@ -191,6 +191,20 @@ const cancelAppointment = (req, res) => {
   if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
   if (!['pending', 'confirmed', 'reschedule_requested'].includes(appt.status)) {
     return res.status(400).json({ success: false, message: 'לא ניתן לבטל תור זה' });
+  }
+
+  // Enforce cancellation policy
+  const business = db.prepare('SELECT cancellation_hours FROM businesses WHERE id = ?').get(appt.business_id);
+  const cancelHours = business?.cancellation_hours || 0;
+  if (cancelHours > 0) {
+    const hoursUntil = (new Date(appt.start_time.replace(' ', 'T') + 'Z') - new Date()) / (1000 * 60 * 60);
+    if (hoursUntil < cancelHours) {
+      return res.status(403).json({
+        success: false,
+        message: `לא ניתן לבטל תור פחות מ-${cancelHours} שעות לפני המועד`,
+        cancellation_hours: cancelHours,
+      });
+    }
   }
 
   const fullAppt = db.prepare('SELECT business_id, service_id, worker_id, start_time FROM appointments WHERE id = ?').get(id);
@@ -460,4 +474,11 @@ const confirmWaitlistEntryInApp = (req, res) => {
   return res.json({ success: true, message: 'התור אושר בהצלחה!', appointment });
 };
 
-module.exports = { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule, addToWaitlist, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntry, confirmWaitlistEntryInApp };
+const getBusinessPolicy = (req, res) => {
+  const db = getDb();
+  const business = db.prepare('SELECT cancellation_hours FROM businesses WHERE id = ?').get(req.user.business_id);
+  if (!business) return res.status(404).json({ success: false, message: 'עסק לא נמצא' });
+  res.json({ success: true, cancellation_hours: business.cancellation_hours || 0 });
+};
+
+module.exports = { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule, addToWaitlist, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntry, confirmWaitlistEntryInApp, getBusinessPolicy };

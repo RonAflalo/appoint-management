@@ -3,6 +3,7 @@ const { initializeDatabase } = require('./db/database');
 const { verifyEmailConnection } = require('./services/emailService');
 const { startReminderJob } = require('./services/reminderService');
 const { startWaitlistJob } = require('./services/waitlistService');
+const { startCompletionJob } = require('./services/completionService');
 const app = require('./app');
 
 const PORT = process.env.PORT || 3001;
@@ -15,5 +16,6 @@ app.listen(PORT, () => {
   if (process.env.NODE_ENV !== 'test') {
     startReminderJob();
     startWaitlistJob();
+    startCompletionJob();
   }
 });
