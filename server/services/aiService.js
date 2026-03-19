@@ -66,6 +66,81 @@ const tools = [
     },
   },
   {
+    name: 'get_cancellation_stats',
+    description: 'Get cancellation statistics — rate, count, and who cancelled. Use for questions about cancellations.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        period: { type: 'string', enum: ['today', 'this_week', 'this_month', 'last_month', 'all_time'] },
+      },
+      required: ['period'],
+    },
+  },
+  {
+    name: 'get_peak_hours',
+    description: 'Get the busiest hours of the day based on appointment history.',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'get_no_shows',
+    description: 'Get appointments that were never confirmed and are now in the past — potential no-shows.',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'get_lost_customers',
+    description: 'Get customers who have not booked in a while (30+ days since their last appointment).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        days: { type: 'number', description: 'Number of days of inactivity (default 30)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_new_customers',
+    description: 'Get customers who booked for the first time in a given period.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        period: { type: 'string', enum: ['this_week', 'this_month', 'last_month'] },
+      },
+      required: ['period'],
+    },
+  },
+  {
+    name: 'get_worker_stats',
+    description: 'Get appointment count and revenue per worker.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        period: { type: 'string', enum: ['this_week', 'this_month', 'last_month', 'all_time'] },
+      },
+      required: ['period'],
+    },
+  },
+  {
+    name: 'get_projected_revenue',
+    description: 'Get projected revenue from upcoming confirmed/pending appointments.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        period: { type: 'string', enum: ['today', 'this_week', 'next_week', 'this_month'] },
+      },
+      required: ['period'],
+    },
+  },
+  {
+    name: 'get_daily_average',
+    description: 'Get the average number of appointments per day and busiest days of the week.',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'get_month_comparison',
+    description: 'Compare this month vs last month — appointments count and revenue.',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
     name: 'cancel_appointment',
     description: 'Cancel a specific appointment by ID. Only use this after the user has confirmed they want to cancel.',
     input_schema: {
@@ -200,6 +275,157 @@ function executeTool(name, input, businessId) {
       WHERE a.business_id = ? AND a.status NOT IN ('cancelled')
       GROUP BY s.id ORDER BY booking_count DESC LIMIT ?
     `).all(businessId, limit);
+  }
+
+  if (name === 'get_cancellation_stats') {
+    const today = israelToday();
+    let dateFilter = '';
+    if (input.period === 'today') dateFilter = `AND date(a.start_time) = '${today}'`;
+    else if (input.period === 'this_week') dateFilter = `AND date(a.start_time) >= date('${today}', '-6 days')`;
+    else if (input.period === 'this_month') dateFilter = `AND strftime('%Y-%m', a.start_time) = '${today.slice(0,7)}'`;
+    else if (input.period === 'last_month') {
+      const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+      d.setMonth(d.getMonth() - 1);
+      dateFilter = `AND strftime('%Y-%m', a.start_time) = '${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}'`;
+    }
+    const cancelled = db.prepare(`
+      SELECT c.name AS customer_name, s.name AS service_name, a.start_time
+      FROM appointments a
+      JOIN users c ON a.customer_id = c.id
+      JOIN services s ON a.service_id = s.id
+      WHERE a.business_id = ? AND a.status = 'cancelled' ${dateFilter}
+      ORDER BY a.start_time DESC
+    `).all(businessId);
+    const total = db.prepare(`SELECT COUNT(*) AS cnt FROM appointments WHERE business_id = ? ${dateFilter.replace(/a\./g,'')}`).get(businessId);
+    return { cancelled_count: cancelled.length, total_appointments: total.cnt, cancellation_rate: total.cnt > 0 ? ((cancelled.length / total.cnt) * 100).toFixed(1) + '%' : '0%', cancelled };
+  }
+
+  if (name === 'get_peak_hours') {
+    return db.prepare(`
+      SELECT CAST(strftime('%H', start_time) AS INTEGER) AS hour, COUNT(*) AS count
+      FROM appointments
+      WHERE business_id = ? AND status NOT IN ('cancelled')
+      GROUP BY hour ORDER BY count DESC
+    `).all(businessId);
+  }
+
+  if (name === 'get_no_shows') {
+    return db.prepare(`
+      SELECT a.id, a.start_time, c.name AS customer_name, c.phone, s.name AS service_name, w.name AS worker_name
+      FROM appointments a
+      JOIN users c ON a.customer_id = c.id
+      JOIN services s ON a.service_id = s.id
+      JOIN users w ON a.worker_id = w.id
+      WHERE a.business_id = ? AND a.status = 'pending' AND a.end_time < ?
+      ORDER BY a.start_time DESC LIMIT 20
+    `).all(businessId, israelNow());
+  }
+
+  if (name === 'get_lost_customers') {
+    const days = input.days || 30;
+    const cutoff = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+    cutoff.setDate(cutoff.getDate() - days);
+    const pad = n => String(n).padStart(2, '0');
+    const cutoffStr = `${cutoff.getFullYear()}-${pad(cutoff.getMonth()+1)}-${pad(cutoff.getDate())}`;
+    return db.prepare(`
+      SELECT u.name, u.email, u.phone, MAX(a.start_time) AS last_appointment, COUNT(a.id) AS total_appointments
+      FROM users u
+      JOIN appointments a ON a.customer_id = u.id AND a.business_id = ?
+      WHERE u.role = 'user' AND u.business_id = ? AND a.status NOT IN ('cancelled')
+      GROUP BY u.id
+      HAVING date(MAX(a.start_time)) < ?
+      ORDER BY last_appointment ASC
+    `).all(businessId, businessId, cutoffStr);
+  }
+
+  if (name === 'get_new_customers') {
+    const today = israelToday();
+    let dateFilter = '';
+    if (input.period === 'this_week') dateFilter = `AND date(a.start_time) >= date('${today}', '-6 days')`;
+    else if (input.period === 'this_month') dateFilter = `AND strftime('%Y-%m', a.start_time) = '${today.slice(0,7)}'`;
+    else if (input.period === 'last_month') {
+      const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+      d.setMonth(d.getMonth() - 1);
+      dateFilter = `AND strftime('%Y-%m', a.start_time) = '${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}'`;
+    }
+    return db.prepare(`
+      SELECT u.name, u.email, u.phone, MIN(a.start_time) AS first_appointment, s.name AS service_name
+      FROM users u
+      JOIN appointments a ON a.customer_id = u.id AND a.business_id = ?
+      JOIN services s ON a.service_id = s.id
+      WHERE u.role = 'user' AND u.business_id = ? AND a.status NOT IN ('cancelled')
+      GROUP BY u.id
+      HAVING date(MIN(a.start_time)) = date(MAX(a.start_time)) ${dateFilter.replace('a.start_time', 'MIN(a.start_time)')}
+      ORDER BY first_appointment ASC
+    `).all(businessId, businessId);
+  }
+
+  if (name === 'get_worker_stats') {
+    const today = israelToday();
+    let dateFilter = '';
+    if (input.period === 'this_week') dateFilter = `AND date(a.start_time) >= date('${today}', '-6 days')`;
+    else if (input.period === 'this_month') dateFilter = `AND strftime('%Y-%m', a.start_time) = '${today.slice(0,7)}'`;
+    else if (input.period === 'last_month') {
+      const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+      d.setMonth(d.getMonth() - 1);
+      dateFilter = `AND strftime('%Y-%m', a.start_time) = '${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}'`;
+    }
+    return db.prepare(`
+      SELECT w.name AS worker_name, COUNT(a.id) AS appointment_count, SUM(s.price) AS total_revenue
+      FROM appointments a
+      JOIN users w ON a.worker_id = w.id
+      JOIN services s ON a.service_id = s.id
+      WHERE a.business_id = ? AND a.status NOT IN ('cancelled') ${dateFilter}
+      GROUP BY w.id ORDER BY total_revenue DESC
+    `).all(businessId);
+  }
+
+  if (name === 'get_projected_revenue') {
+    const today = israelToday();
+    const now = israelNow();
+    let dateFilter = '';
+    if (input.period === 'today') dateFilter = `AND date(a.start_time) = '${today}' AND a.start_time > '${now}'`;
+    else if (input.period === 'this_week') dateFilter = `AND date(a.start_time) >= '${today}' AND date(a.start_time) <= date('${today}', '+6 days')`;
+    else if (input.period === 'next_week') dateFilter = `AND date(a.start_time) >= date('${today}', '+7 days') AND date(a.start_time) <= date('${today}', '+13 days')`;
+    else if (input.period === 'this_month') dateFilter = `AND strftime('%Y-%m', a.start_time) = '${today.slice(0,7)}' AND a.start_time > '${now}'`;
+    return db.prepare(`
+      SELECT COUNT(*) AS appointment_count, SUM(s.price) AS projected_revenue
+      FROM appointments a
+      JOIN services s ON a.service_id = s.id
+      WHERE a.business_id = ? AND a.status IN ('pending', 'confirmed') ${dateFilter}
+    `).get(businessId);
+  }
+
+  if (name === 'get_daily_average') {
+    const avg = db.prepare(`
+      SELECT AVG(cnt) AS daily_average FROM (
+        SELECT date(start_time) AS day, COUNT(*) AS cnt
+        FROM appointments
+        WHERE business_id = ? AND status NOT IN ('cancelled')
+        GROUP BY day
+      )
+    `).get(businessId);
+    const byDay = db.prepare(`
+      SELECT CAST(strftime('%w', start_time) AS INTEGER) AS day_of_week, COUNT(*) AS count
+      FROM appointments
+      WHERE business_id = ? AND status NOT IN ('cancelled')
+      GROUP BY day_of_week ORDER BY count DESC
+    `).all(businessId);
+    const dayNames = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+    return { daily_average: avg.daily_average?.toFixed(1), busiest_days: byDay.map(d => ({ day: dayNames[d.day_of_week], count: d.count })) };
+  }
+
+  if (name === 'get_month_comparison') {
+    const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+    const thisMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    d.setMonth(d.getMonth() - 1);
+    const lastMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const query = (month) => db.prepare(`
+      SELECT COUNT(*) AS appointments, SUM(s.price) AS revenue
+      FROM appointments a JOIN services s ON a.service_id = s.id
+      WHERE a.business_id = ? AND a.status IN ('completed','confirmed') AND strftime('%Y-%m', a.start_time) = ?
+    `).get(businessId, month);
+    return { this_month: { month: thisMonth, ...query(thisMonth) }, last_month: { month: lastMonth, ...query(lastMonth) } };
   }
 
   if (name === 'cancel_appointment') {
