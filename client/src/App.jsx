@@ -23,7 +23,9 @@ import AdminAppointments from './pages/admin/Appointments';
 import AdminSettings from './pages/admin/Settings';
 import AdminWorkersCalendar from './pages/admin/WorkersCalendar';
 import AdminCustomers from './pages/admin/Customers';
+import AdminCustomerDetail from './pages/admin/CustomerDetail';
 import AdminOnboarding from './pages/admin/Onboarding';
+import AdminAnalytics from './pages/admin/Analytics';
 
 // Worker pages
 import WorkerSchedule from './pages/worker/Schedule';
@@ -97,6 +99,16 @@ export default function App() {
       <Route path="/admin/customers" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <AdminLayout><AdminCustomers /></AdminLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/customers/:id" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminLayout><AdminCustomerDetail /></AdminLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/analytics" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminLayout><AdminAnalytics /></AdminLayout>
         </ProtectedRoute>
       } />
       <Route path="/admin/onboarding" element={

@@ -137,6 +137,9 @@ function initializeDatabase(overridePath) {
   // Migrate: cancellation policy (hours before appointment; 0 = no restriction)
   try { db.exec("ALTER TABLE businesses ADD COLUMN cancellation_hours INTEGER NOT NULL DEFAULT 0"); } catch (_) {}
 
+  // Migrate: admin notes per customer
+  try { db.exec("ALTER TABLE users ADD COLUMN admin_notes TEXT"); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

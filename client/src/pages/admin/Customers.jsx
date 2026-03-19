@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getCustomers } from '../../api/admin';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { formatDateTime } from '../../utils/dateUtils';
@@ -9,6 +10,7 @@ export default function AdminCustomers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getCustomers()
@@ -62,7 +64,7 @@ export default function AdminCustomers() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.map(c => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={c.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/customers/${c.id}`)}>
                     <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                     <td className="px-4 py-3 text-gray-600 text-xs" dir="ltr">{c.email}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell" dir="ltr">{c.phone || '—'}</td>

@@ -10,7 +10,7 @@ const {
   getServices, createService, updateService, deleteService,
   getAppointments, updateAppointmentStatus, requestReschedule,
   getSettings, updateSettings, uploadImage,
-  getCustomers,
+  getCustomers, getCustomerDetail, updateCustomerNotes,
   completeOnboarding,
   getAnalytics,
 } = require('../controllers/adminController');
@@ -41,6 +41,8 @@ router.get('/workers-calendar', getWorkersCalendar);
 router.get('/workers-calendar/day', getWorkersDayDetail);
 
 router.get('/customers', getCustomers);
+router.get('/customers/:id', getCustomerDetail);
+router.put('/customers/:id/notes', updateCustomerNotes);
 router.post('/onboarding/complete', completeOnboarding);
 router.get('/analytics', getAnalytics);
 

@@ -411,6 +411,43 @@ const getCustomers = (req, res) => {
   res.json({ success: true, customers });
 };
 
+const getCustomerDetail = (req, res) => {
+  const db = getDb();
+  const { id } = req.params;
+  const customer = db.prepare(`
+    SELECT id, name, email, phone, created_at, email_verified, admin_notes
+    FROM users
+    WHERE id = ? AND business_id = ? AND role = 'user' AND is_active = 1
+  `).get(id, req.user.business_id);
+  if (!customer) return res.status(404).json({ success: false, message: 'לקוח לא נמצא' });
+
+  const appointments = db.prepare(`
+    SELECT
+      a.id, a.start_time, a.end_time, a.status, a.notes, a.created_at,
+      s.name AS service_name, s.price,
+      w.name AS worker_name
+    FROM appointments a
+    JOIN services s ON a.service_id = s.id
+    JOIN users w ON a.worker_id = w.id
+    WHERE a.customer_id = ? AND a.business_id = ?
+    ORDER BY a.start_time DESC
+  `).all(id, req.user.business_id);
+
+  res.json({ success: true, customer, appointments });
+};
+
+const updateCustomerNotes = (req, res) => {
+  const db = getDb();
+  const { id } = req.params;
+  const { notes } = req.body;
+  const result = db.prepare(`
+    UPDATE users SET admin_notes = ?
+    WHERE id = ? AND business_id = ? AND role = 'user'
+  `).run(notes ?? null, id, req.user.business_id);
+  if (result.changes === 0) return res.status(404).json({ success: false, message: 'לקוח לא נמצא' });
+  res.json({ success: true });
+};
+
 // ---- Onboarding ----
 
 const completeOnboarding = (req, res) => {
@@ -583,7 +620,7 @@ module.exports = {
   getServices, createService, updateService, deleteService,
   getAppointments, updateAppointmentStatus, requestReschedule,
   getSettings, updateSettings, uploadImage,
-  getCustomers,
+  getCustomers, getCustomerDetail, updateCustomerNotes,
   completeOnboarding,
   getAnalytics,
 };

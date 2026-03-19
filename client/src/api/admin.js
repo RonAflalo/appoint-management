@@ -17,7 +17,10 @@ export const getWorkersCalendar = (year, month) => api.get('/admin/workers-calen
 export const getWorkersDayDetail = (date) => api.get('/admin/workers-calendar/day', { params: { date } }).then(r => r.data);
 export const toggleAdminAsWorker = () => api.patch('/admin/me/worker-toggle').then(r => r.data);
 export const getCustomers = () => api.get('/admin/customers').then(r => r.data);
+export const getCustomerDetail = (id) => api.get(`/admin/customers/${id}`).then(r => r.data);
+export const updateCustomerNotes = (id, notes) => api.put(`/admin/customers/${id}/notes`, { notes }).then(r => r.data);
 export const completeOnboarding = () => api.post('/admin/onboarding/complete').then(r => r.data);
+export const getAnalytics = () => api.get('/admin/analytics').then(r => r.data);
 export const uploadImage = (file) => {
   const form = new FormData();
   form.append('image', file);
