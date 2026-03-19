@@ -12,6 +12,7 @@ const {
   getSettings, updateSettings, uploadImage,
   getCustomers,
   completeOnboarding,
+  getAnalytics,
 } = require('../controllers/adminController');
 
 router.use(authenticate, authorize('admin'));
@@ -41,5 +42,12 @@ router.get('/workers-calendar/day', getWorkersDayDetail);
 
 router.get('/customers', getCustomers);
 router.post('/onboarding/complete', completeOnboarding);
+router.get('/analytics', getAnalytics);
+
+router.post('/test/run-reminders', async (req, res) => {
+  const { sendReminders } = require('../services/reminderService');
+  await sendReminders();
+  res.json({ ok: true, message: 'Reminder check triggered' });
+});
 
 module.exports = router;
