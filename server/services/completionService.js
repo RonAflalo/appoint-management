@@ -9,12 +9,15 @@ const { getDb } = require('../db/database');
 
 function completePassedAppointments() {
   const db = getDb();
-  const now = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+  // Use Israeli local time to match how end_time is stored in the DB
+  const localDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+  const pad = n => String(n).padStart(2, '0');
+  const now = `${localDate.getFullYear()}-${pad(localDate.getMonth()+1)}-${pad(localDate.getDate())} ${pad(localDate.getHours())}:${pad(localDate.getMinutes())}:${pad(localDate.getSeconds())}`;
 
   const result = db.prepare(`
     UPDATE appointments
     SET status = 'completed'
-    WHERE status IN ('pending', 'confirmed')
+    WHERE status = 'confirmed'
       AND end_time < ?
   `).run(now);
 

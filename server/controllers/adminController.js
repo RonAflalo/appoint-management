@@ -165,7 +165,7 @@ const updateAppointmentStatus = (req, res) => {
   }
   const db = getDb();
   const appt = db.prepare(`
-    SELECT a.id, a.start_time, a.status AS old_status,
+    SELECT a.id, a.start_time, a.end_time, a.status AS old_status,
            c.name AS customer_name, c.email AS customer_email,
            w.name AS worker_name, s.name AS service_name
     FROM appointments a
@@ -175,6 +175,20 @@ const updateAppointmentStatus = (req, res) => {
     WHERE a.id = ? AND a.business_id = ?
   `).get(id, req.user.business_id);
   if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
+
+  // Cannot mark a future appointment as completed
+  if (status === 'completed') {
+    const israelNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+    const endTime = new Date(appt.end_time.replace(' ', 'T'));
+    if (endTime > israelNow) {
+      return res.status(400).json({ success: false, message: 'לא ניתן לסמן תור עתידי כהושלם' });
+    }
+  }
+
+  // Cannot reactivate a cancelled appointment
+  if (appt.old_status === 'cancelled' && ['pending', 'confirmed'].includes(status)) {
+    return res.status(400).json({ success: false, message: 'לא ניתן להפעיל מחדש תור שבוטל' });
+  }
 
   db.prepare('UPDATE appointments SET status = ? WHERE id = ?').run(status, id);
 
