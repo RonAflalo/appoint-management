@@ -170,6 +170,18 @@ const tools = [
     input_schema: { type: 'object', properties: {}, required: [] },
   },
   {
+    name: 'get_revenue_forecast',
+    description: 'Forecast future revenue and appointments based on historical trends, growth rate, and customer acquisition. Use for questions about expected income next month, growth predictions, or business trajectory.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        months_history: { type: 'number', description: 'How many past months to base the forecast on (default 6)' },
+        forecast_months: { type: 'number', description: 'How many months ahead to forecast (default 3)' },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'get_category_revenue',
     description: 'Get revenue and appointment count grouped by service category. Use for questions about which category is most profitable, category performance, or category revenue comparison.',
     input_schema: {
@@ -502,6 +514,109 @@ function executeTool(name, input, businessId) {
     query += ' ORDER BY wl.slot_time ASC';
     const entries = db.prepare(query).all(...params);
     return { count: entries.length, entries };
+  }
+
+  if (name === 'get_revenue_forecast') {
+    const monthsHistory = Math.min(input.months_history || 6, 24);
+    const forecastMonths = Math.min(input.forecast_months || 3, 6);
+
+    // Pull monthly revenue + appointment + new customer counts for past N months
+    const history = db.prepare(`
+      SELECT
+        strftime('%Y-%m', a.start_time) AS month,
+        COUNT(a.id) AS appointments,
+        SUM(s.price) AS revenue
+      FROM appointments a
+      JOIN services s ON a.service_id = s.id
+      WHERE a.business_id = ? AND a.status NOT IN ('cancelled')
+        AND a.start_time >= date('now', '-${monthsHistory} months')
+      GROUP BY month ORDER BY month ASC
+    `).all(businessId);
+
+    const customerGrowth = db.prepare(`
+      SELECT
+        strftime('%Y-%m', created_at) AS month,
+        COUNT(*) AS new_customers
+      FROM users
+      WHERE business_id = ? AND role = 'user'
+        AND created_at >= date('now', '-${monthsHistory} months')
+      GROUP BY month ORDER BY month ASC
+    `).all(businessId);
+
+    if (history.length < 2) {
+      return { error: 'אין מספיק היסטוריה לחיזוי — נדרשים לפחות 2 חודשים של נתונים' };
+    }
+
+    // Calculate month-over-month growth rates
+    const revenueValues = history.map(h => h.revenue || 0);
+    const apptValues = history.map(h => h.appointments || 0);
+
+    // Linear regression helper
+    const linearRegression = (values) => {
+      const n = values.length;
+      const xMean = (n - 1) / 2;
+      const yMean = values.reduce((a, b) => a + b, 0) / n;
+      let num = 0, den = 0;
+      for (let i = 0; i < n; i++) {
+        num += (i - xMean) * (values[i] - yMean);
+        den += (i - xMean) ** 2;
+      }
+      const slope = den !== 0 ? num / den : 0;
+      const intercept = yMean - slope * xMean;
+      return { slope, intercept };
+    };
+
+    const revReg = linearRegression(revenueValues);
+    const apptReg = linearRegression(apptValues);
+
+    // Average growth rate (month over month %)
+    let growthRates = [];
+    for (let i = 1; i < revenueValues.length; i++) {
+      if (revenueValues[i-1] > 0) {
+        growthRates.push((revenueValues[i] - revenueValues[i-1]) / revenueValues[i-1]);
+      }
+    }
+    const avgGrowthRate = growthRates.length > 0
+      ? growthRates.reduce((a, b) => a + b, 0) / growthRates.length
+      : 0;
+
+    // Build forecast using both linear trend + growth rate blend
+    const lastRevenue = revenueValues[revenueValues.length - 1];
+    const lastAppts = apptValues[apptValues.length - 1];
+    const n = revenueValues.length;
+
+    const forecast = [];
+    const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+    for (let i = 1; i <= forecastMonths; i++) {
+      d.setMonth(d.getMonth() + 1);
+      const monthLabel = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+
+      const trendRevenue = Math.max(0, revReg.intercept + revReg.slope * (n - 1 + i));
+      const growthRevenue = lastRevenue * Math.pow(1 + avgGrowthRate, i);
+      const blendedRevenue = Math.round((trendRevenue * 0.5 + growthRevenue * 0.5));
+
+      const trendAppts = Math.max(0, apptReg.intercept + apptReg.slope * (n - 1 + i));
+      const growthAppts = lastAppts * Math.pow(1 + avgGrowthRate, i);
+      const blendedAppts = Math.round((trendAppts * 0.5 + growthAppts * 0.5));
+
+      forecast.push({ month: monthLabel, predicted_revenue: blendedRevenue, predicted_appointments: blendedAppts });
+    }
+
+    const totalCustomers = db.prepare('SELECT COUNT(*) AS cnt FROM users WHERE business_id = ? AND role = ?').get(businessId, 'user');
+    const recentCustomers = db.prepare(`
+      SELECT COUNT(*) AS cnt FROM users
+      WHERE business_id = ? AND role = 'user' AND created_at >= date('now', '-30 days')
+    `).get(businessId);
+
+    return {
+      history_months: history,
+      customer_growth_by_month: customerGrowth,
+      total_customers: totalCustomers.cnt,
+      new_customers_last_30_days: recentCustomers.cnt,
+      avg_monthly_growth_rate: (avgGrowthRate * 100).toFixed(1) + '%',
+      forecast,
+      note: 'התחזית מבוססת על שילוב של מגמה לינארית וקצב צמיחה ממוצע',
+    };
   }
 
   if (name === 'get_category_revenue') {
