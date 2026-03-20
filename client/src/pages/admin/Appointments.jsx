@@ -279,19 +279,16 @@ export default function AdminAppointments() {
           </select>
 
           {/* Date filter with "הכל" placeholder */}
-          <div className="relative">
+          <div className="relative inline-flex items-center border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-indigo-500">
+            <span className="px-3 py-2 text-sm text-gray-500 pointer-events-none whitespace-nowrap">
+              {filters.date || 'הכל'}
+            </span>
             <input
               type="date"
               value={filters.date}
               onChange={e => setFilters(p => ({ ...p, date: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              style={!filters.date ? { color: 'transparent' } : {}}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full"
             />
-            {!filters.date && (
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style={{ left: '28px', background: 'white' }}>
-                <span className="text-sm text-gray-500">הכל</span>
-              </div>
-            )}
           </div>
 
           <select
@@ -406,7 +403,6 @@ export default function AdminAppointments() {
                     ref={photoInputRef}
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     className="hidden"
                     onChange={handlePhotoUpload}
                     disabled={photoUploading}

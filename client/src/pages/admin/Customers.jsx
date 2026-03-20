@@ -55,23 +55,18 @@ export default function AdminCustomers() {
               <thead>
                 <tr className="bg-gray-50 text-gray-600 text-xs uppercase">
                   <th className="px-4 py-3 text-right font-medium">שם</th>
-                  <th className="px-4 py-3 text-right font-medium">אימייל</th>
-                  <th className="px-4 py-3 text-right font-medium hidden md:table-cell">טלפון</th>
                   <th className="px-4 py-3 text-right font-medium">תורים</th>
-                  <th className="px-4 py-3 text-right font-medium hidden sm:table-cell">תור אחרון</th>
                   <th className="px-4 py-3 text-right font-medium">אימות</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.map(c => (
                   <tr key={c.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/customers/${c.id}`)}>
-                    <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs" dir="ltr">{c.email}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell" dir="ltr">{c.phone || '—'}</td>
-                    <td className="px-4 py-3 text-gray-600">{c.appointment_count}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">
-                      {c.last_appointment ? formatDateTime(c.last_appointment) : '—'}
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{c.name}</div>
+                      <div className="text-xs text-gray-400 mt-0.5" dir="ltr">{c.email}</div>
                     </td>
+                    <td className="px-4 py-3 text-gray-600">{c.appointment_count}</td>
                     <td className="px-4 py-3">
                       {c.email_verified ? (
                         <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">✓ מאומת</span>

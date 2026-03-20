@@ -316,7 +316,6 @@ export default function WorkerAppointments() {
                     ref={photoInputRef}
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     className="hidden"
                     onChange={handlePhotoUpload}
                     disabled={photoUploading}
