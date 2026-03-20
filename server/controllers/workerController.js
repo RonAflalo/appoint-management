@@ -208,6 +208,46 @@ const setAvailability = (req, res) => {
   res.json({ success: true, override });
 };
 
+// ─── Appointment Photos ───────────────────────────────────────────────────────
+
+const getAppointmentPhotos = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const appt = db.prepare('SELECT id FROM appointments WHERE id = ? AND worker_id = ?').get(id, req.user.id);
+  if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
+  const photos = db.prepare('SELECT id, url, created_at FROM appointment_photos WHERE appointment_id = ? ORDER BY created_at ASC').all(id);
+  res.json({ success: true, photos });
+};
+
+const addAppointmentPhoto = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const appt = db.prepare('SELECT id FROM appointments WHERE id = ? AND worker_id = ?').get(id, req.user.id);
+  if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
+  if (!req.file) return res.status(400).json({ success: false, message: 'לא נמצאה תמונה' });
+  const url = `/uploads/${req.file.filename}`;
+  const result = db.prepare('INSERT INTO appointment_photos (appointment_id, url, uploaded_by) VALUES (?, ?, ?)').run(id, url, req.user.id);
+  const photo = db.prepare('SELECT id, url, created_at FROM appointment_photos WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json({ success: true, photo });
+};
+
+const deleteAppointmentPhoto = (req, res) => {
+  const { id, photoId } = req.params;
+  const db = getDb();
+  const appt = db.prepare('SELECT id FROM appointments WHERE id = ? AND worker_id = ?').get(id, req.user.id);
+  if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
+  const photo = db.prepare('SELECT id, url FROM appointment_photos WHERE id = ? AND appointment_id = ?').get(photoId, id);
+  if (!photo) return res.status(404).json({ success: false, message: 'תמונה לא נמצאה' });
+  db.prepare('DELETE FROM appointment_photos WHERE id = ?').run(photoId);
+  try {
+    const fs = require('fs');
+    const pathMod = require('path');
+    const filePath = pathMod.join(__dirname, '..', photo.url);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch (_) {}
+  res.json({ success: true });
+};
+
 module.exports = {
   getAppointments,
   approveAppointment,
@@ -216,4 +256,7 @@ module.exports = {
   updateAppointmentStatus,
   getAvailability,
   setAvailability,
+  getAppointmentPhotos,
+  addAppointmentPhoto,
+  deleteAppointmentPhoto,
 };

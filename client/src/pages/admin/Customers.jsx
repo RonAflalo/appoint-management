@@ -50,7 +50,7 @@ export default function AdminCustomers() {
             <p>{search ? 'לא נמצאו לקוחות' : 'אין לקוחות רשומים עדיין'}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 text-gray-600 text-xs uppercase">

@@ -203,6 +203,22 @@ function initializeDatabase(overridePath) {
   // Migrate: worker-specific services
   try { db.exec(`CREATE TABLE IF NOT EXISTS worker_services (worker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, service_id INTEGER NOT NULL REFERENCES services(id) ON DELETE CASCADE, PRIMARY KEY (worker_id, service_id))`); } catch (_) {}
 
+  // Migrate: soft-delete for workers
+  try { db.exec("ALTER TABLE users ADD COLUMN deleted_at TEXT"); } catch (_) {}
+
+  // Migrate: appointment photos
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS appointment_photos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        appointment_id INTEGER NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
+        url TEXT NOT NULL,
+        uploaded_by INTEGER REFERENCES users(id),
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

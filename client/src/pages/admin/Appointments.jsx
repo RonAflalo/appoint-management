@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
-import { getAppointments, updateAppointmentStatus, getWorkers, requestAdminReschedule } from '../../api/admin';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import {
+  getAppointments, updateAppointmentStatus, getWorkers, requestAdminReschedule,
+  getAppointmentPhotos, addAppointmentPhoto, deleteAppointmentPhoto,
+} from '../../api/admin';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
 import Modal from '../../components/common/Modal';
+import ThreeDotMenu from '../../components/common/ThreeDotMenu';
 import { formatDateTime, toDateString } from '../../utils/dateUtils';
 import { useToast } from '../../hooks/useToast';
 
@@ -16,7 +21,7 @@ function exportCSV(appointments) {
     a.price, STATUS_LABELS[a.status] || a.status, a.notes || '',
   ]);
   const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const bom = '\uFEFF'; // UTF-8 BOM for Excel Hebrew support
+  const bom = '\uFEFF';
   const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -37,7 +42,6 @@ function exportPDF(appointments) {
       <td>${a.notes || ''}</td>
     </tr>
   `).join('');
-
   const html = `
     <html dir="rtl">
     <head>
@@ -67,7 +71,6 @@ function exportPDF(appointments) {
     </body>
     </html>
   `;
-
   const win = window.open('', '_blank');
   win.document.write(html);
   win.document.close();
@@ -85,13 +88,21 @@ const STATUS_OPTIONS = [
 ];
 
 export default function AdminAppointments() {
+  const location = useLocation();
   const [appointments, setAppointments] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ workerId: '', date: '', status: '' });
+  const [filters, setFilters] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return { workerId: '', date: params.get('date') || '', status: '' };
+  });
 
   // Detail modal
   const [detailAppt, setDetailAppt] = useState(null);
+  const [apptPhotos, setApptPhotos] = useState([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef(null);
 
   // Reschedule modal
   const [rescheduleAppt, setRescheduleAppt] = useState(null);
@@ -121,11 +132,20 @@ export default function AdminAppointments() {
 
   useEffect(() => { load(); }, [filters]);
 
+  // Fetch photos when detail modal opens
+  useEffect(() => {
+    if (!detailAppt) { setApptPhotos([]); return; }
+    setPhotosLoading(true);
+    getAppointmentPhotos(detailAppt.id)
+      .then(data => setApptPhotos(data.photos || []))
+      .catch(() => {})
+      .finally(() => setPhotosLoading(false));
+  }, [detailAppt?.id]);
+
   const handleStatus = async (id, status) => {
     try {
       await updateAppointmentStatus(id, status);
       addToast(status === 'confirmed' ? 'התור אושר' : status === 'cancelled' ? 'התור בוטל' : 'הסטטוס עודכן');
-      // Update detail modal if open
       setDetailAppt(prev => prev?.id === id ? { ...prev, status } : prev);
       load();
     } catch {
@@ -163,64 +183,73 @@ export default function AdminAppointments() {
     }
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !detailAppt) return;
+    setPhotoUploading(true);
+    try {
+      const data = await addAppointmentPhoto(detailAppt.id, file);
+      setApptPhotos(prev => [...prev, data.photo]);
+    } catch {
+      addToast('שגיאה בהעלאת תמונה', 'error');
+    } finally {
+      setPhotoUploading(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
+
+  const handleDeletePhoto = async (photoId) => {
+    if (!detailAppt) return;
+    try {
+      await deleteAppointmentPhoto(detailAppt.id, photoId);
+      setApptPhotos(prev => prev.filter(p => p.id !== photoId));
+    } catch {
+      addToast('שגיאה במחיקת תמונה', 'error');
+    }
+  };
+
   const clearFilters = () => setFilters({ workerId: '', date: '', status: '' });
 
-  const ActionButtons = ({ appt, stopProp = false }) => {
-    const wrap = (fn) => (e) => { if (stopProp) e.stopPropagation(); fn(); };
-    return (
-      <div className="flex items-center gap-1.5 flex-wrap" onClick={e => e.stopPropagation()}>
-        {appt.status === 'pending' && (
-          <>
-            <button
-              onClick={() => handleStatus(appt.id, 'confirmed')}
-              className="px-2.5 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
-            >
-              אשר
-            </button>
-            <button
-              onClick={() => handleStatus(appt.id, 'cancelled')}
-              className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
-            >
-              בטל
-            </button>
-          </>
-        )}
-        {appt.status === 'confirmed' && (
-          <>
-            <button
-              onClick={() => handleStatus(appt.id, 'completed')}
-              className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors"
-            >
-              הושלם
-            </button>
-            <button
-              onClick={(e) => openReschedule(appt, e)}
-              className="px-2.5 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors"
-            >
-              שנה מועד
-            </button>
-            <button
-              onClick={() => handleStatus(appt.id, 'cancelled')}
-              className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
-            >
-              בטל
-            </button>
-          </>
-        )}
-        {appt.status === 'reschedule_requested' && (
-          <button
-            onClick={() => handleStatus(appt.id, 'cancelled')}
-            className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
-          >
-            בטל
-          </button>
-        )}
-        {(appt.status === 'completed' || appt.status === 'cancelled') && (
-          <span className="text-xs text-gray-300">—</span>
-        )}
-      </div>
-    );
+  const getMenuItems = (appt) => {
+    const items = [];
+    if (appt.status === 'pending') {
+      items.push({ label: 'אשר', icon: '✓', onClick: () => handleStatus(appt.id, 'confirmed') });
+      items.push({ label: 'בטל', icon: '✕', onClick: () => handleStatus(appt.id, 'cancelled'), danger: true });
+    }
+    if (appt.status === 'confirmed') {
+      items.push({ label: 'הושלם', icon: '✓', onClick: () => handleStatus(appt.id, 'completed') });
+      items.push({ label: 'שנה מועד', icon: '📅', onClick: () => openReschedule(appt) });
+      items.push({ label: 'בטל', icon: '✕', onClick: () => handleStatus(appt.id, 'cancelled'), danger: true });
+    }
+    if (appt.status === 'reschedule_requested') {
+      items.push({ label: 'בטל', icon: '✕', onClick: () => handleStatus(appt.id, 'cancelled'), danger: true });
+    }
+    return items;
   };
+
+  const ActionButtons = ({ appt }) => (
+    <div className="flex items-center gap-1.5 flex-wrap" onClick={e => e.stopPropagation()}>
+      {appt.status === 'pending' && (
+        <>
+          <button onClick={() => handleStatus(appt.id, 'confirmed')} className="px-2.5 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors">אשר</button>
+          <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+        </>
+      )}
+      {appt.status === 'confirmed' && (
+        <>
+          <button onClick={() => handleStatus(appt.id, 'completed')} className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors">הושלם</button>
+          <button onClick={(e) => openReschedule(appt, e)} className="px-2.5 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors">שנה מועד</button>
+          <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+        </>
+      )}
+      {appt.status === 'reschedule_requested' && (
+        <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+      )}
+      {(appt.status === 'completed' || appt.status === 'cancelled') && (
+        <span className="text-xs text-gray-300">—</span>
+      )}
+    </div>
+  );
 
   return (
     <div>
@@ -231,18 +260,8 @@ export default function AdminAppointments() {
         </div>
         {appointments.length > 0 && (
           <div className="flex gap-2">
-            <button
-              onClick={() => exportCSV(appointments)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              ⬇ CSV
-            </button>
-            <button
-              onClick={() => exportPDF(appointments)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              ⬇ PDF
-            </button>
+            <button onClick={() => exportCSV(appointments)} className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">⬇ CSV</button>
+            <button onClick={() => exportPDF(appointments)} className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">⬇ PDF</button>
           </div>
         )}
       </div>
@@ -259,12 +278,21 @@ export default function AdminAppointments() {
             {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
 
-          <input
-            type="date"
-            value={filters.date}
-            onChange={e => setFilters(p => ({ ...p, date: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          {/* Date filter with "הכל" placeholder */}
+          <div className="relative">
+            <input
+              type="date"
+              value={filters.date}
+              onChange={e => setFilters(p => ({ ...p, date: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={!filters.date ? { color: 'transparent' } : {}}
+            />
+            {!filters.date && (
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style={{ left: '28px', background: 'white' }}>
+                <span className="text-sm text-gray-500">הכל</span>
+              </div>
+            )}
+          </div>
 
           <select
             value={filters.status}
@@ -319,7 +347,7 @@ export default function AdminAppointments() {
                     {formatDateTime(appt.start_time)}
                   </td>
                   <td className="px-4 py-3">
-                    <ActionButtons appt={appt} />
+                    <ThreeDotMenu items={getMenuItems(appt)} />
                   </td>
                 </tr>
               ))}
@@ -329,14 +357,9 @@ export default function AdminAppointments() {
       )}
 
       {/* Detail Modal */}
-      <Modal
-        isOpen={!!detailAppt}
-        onClose={() => setDetailAppt(null)}
-        title="פרטי תור"
-      >
+      <Modal isOpen={!!detailAppt} onClose={() => setDetailAppt(null)} title="פרטי תור">
         {detailAppt && (
           <div className="space-y-4">
-            {/* Status */}
             <div className="flex items-center justify-between">
               <StatusBadge status={detailAppt.status} />
               {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
@@ -346,7 +369,6 @@ export default function AdminAppointments() {
               )}
             </div>
 
-            {/* Customer */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
               <p className="text-xs text-gray-400 font-medium uppercase">לקוח</p>
               <p className="font-semibold text-gray-900">{detailAppt.customer_name}</p>
@@ -356,34 +378,17 @@ export default function AdminAppointments() {
               )}
             </div>
 
-            {/* Appointment details */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
               <p className="text-xs text-gray-400 font-medium uppercase">פרטי התור</p>
               <div className="grid grid-cols-2 gap-y-2.5 text-sm">
-                <div>
-                  <p className="text-xs text-gray-400">שירות</p>
-                  <p className="text-gray-900 font-medium">{detailAppt.service_name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">מחיר</p>
-                  <p className="text-gray-900 font-medium">₪{detailAppt.price}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">משך</p>
-                  <p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">עובד</p>
-                  <p className="text-gray-900 font-medium">{detailAppt.worker_name}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-xs text-gray-400">תאריך ושעה</p>
-                  <p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p>
-                </div>
+                <div><p className="text-xs text-gray-400">שירות</p><p className="text-gray-900 font-medium">{detailAppt.service_name}</p></div>
+                <div><p className="text-xs text-gray-400">מחיר</p><p className="text-gray-900 font-medium">₪{detailAppt.price}</p></div>
+                <div><p className="text-xs text-gray-400">משך</p><p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p></div>
+                <div><p className="text-xs text-gray-400">עובד</p><p className="text-gray-900 font-medium">{detailAppt.worker_name}</p></div>
+                <div className="col-span-2"><p className="text-xs text-gray-400">תאריך ושעה</p><p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p></div>
               </div>
             </div>
 
-            {/* Notes */}
             {detailAppt.notes && (
               <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 text-sm text-yellow-800">
                 <p className="text-xs text-yellow-600 font-medium mb-1">הערת לקוח</p>
@@ -391,7 +396,44 @@ export default function AdminAppointments() {
               </div>
             )}
 
-            {/* Actions inside modal */}
+            {/* Photos */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-gray-400 font-medium uppercase">תמונות</p>
+                <label className={`text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-colors ${photoUploading ? 'bg-gray-100 text-gray-400' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}>
+                  {photoUploading ? 'מעלה...' : '+ הוסף תמונה'}
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                    disabled={photoUploading}
+                  />
+                </label>
+              </div>
+              {photosLoading ? (
+                <div className="text-xs text-gray-400 py-2">טוען תמונות...</div>
+              ) : apptPhotos.length === 0 ? (
+                <div className="text-xs text-gray-300 py-2">אין תמונות</div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {apptPhotos.map(photo => (
+                    <div key={photo.id} className="relative group">
+                      <img src={photo.url} alt="" className="w-full h-20 object-cover rounded-lg border border-gray-200" />
+                      <button
+                        onClick={() => handleDeletePhoto(photo.id)}
+                        className="absolute top-1 left-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="pt-1">
               <ActionButtons appt={detailAppt} />
             </div>
@@ -400,11 +442,7 @@ export default function AdminAppointments() {
       </Modal>
 
       {/* Reschedule Modal */}
-      <Modal
-        isOpen={!!rescheduleAppt}
-        onClose={() => setRescheduleAppt(null)}
-        title="בקשת שינוי מועד"
-      >
+      <Modal isOpen={!!rescheduleAppt} onClose={() => setRescheduleAppt(null)} title="בקשת שינוי מועד">
         {rescheduleAppt && (
           <form onSubmit={handleReschedule} className="space-y-4">
             <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
@@ -413,50 +451,19 @@ export default function AdminAppointments() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">תאריך חדש מוצע</label>
-              <input
-                type="date"
-                value={rescheduleDate}
-                min={toDateString(new Date())}
-                onChange={e => setRescheduleDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              />
+              <input type="date" value={rescheduleDate} min={toDateString(new Date())} onChange={e => setRescheduleDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">שעה חדשה מוצעת</label>
-              <input
-                type="time"
-                value={rescheduleTime}
-                onChange={e => setRescheduleTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              />
+              <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">הערה ללקוח (אופציונלי)</label>
-              <textarea
-                value={rescheduleNote}
-                onChange={e => setRescheduleNote(e.target.value)}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                placeholder="סיבה לשינוי..."
-              />
+              <textarea value={rescheduleNote} onChange={e => setRescheduleNote(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="סיבה לשינוי..." />
             </div>
             <div className="flex gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                {submitting ? 'שולח...' : 'שלח בקשה ללקוח'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setRescheduleAppt(null)}
-                className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-              >
-                ביטול
-              </button>
+              <button type="submit" disabled={submitting} className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg text-sm font-medium transition-colors">{submitting ? 'שולח...' : 'שלח בקשה ללקוח'}</button>
+              <button type="button" onClick={() => setRescheduleAppt(null)} className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">ביטול</button>
             </div>
           </form>
         )}
