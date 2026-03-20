@@ -344,7 +344,9 @@ export default function AdminAppointments() {
                     {formatDateTime(appt.start_time)}
                   </td>
                   <td className="px-4 py-3">
-                    <ThreeDotMenu items={getMenuItems(appt)} />
+                    {getMenuItems(appt).length > 0
+                      ? <ThreeDotMenu items={getMenuItems(appt)} />
+                      : <span className="text-gray-300 text-sm">—</span>}
                   </td>
                 </tr>
               ))}
