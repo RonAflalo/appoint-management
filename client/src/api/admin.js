@@ -37,6 +37,9 @@ export const updateRecurringRule = (id, data) => api.put(`/admin/recurring-rules
 export const deleteRecurringRule = (id) => api.delete(`/admin/recurring-rules/${id}`).then(r => r.data);
 export const getCalendarStatus = () => api.get('/admin/me/calendar-status').then(r => r.data);
 export const disconnectCalendar = () => api.post('/admin/me/calendar-disconnect').then(r => r.data);
+export const getWorkerServices = (id) => api.get(`/admin/workers/${id}/services`).then(r => r.data);
+export const updateWorkerServices = (id, serviceIds) => api.put(`/admin/workers/${id}/services`, { serviceIds }).then(r => r.data);
+export const getDashboardStats = () => api.get('/admin/dashboard-stats').then(r => r.data);
 export const uploadImage = (file) => {
   const form = new FormData();
   form.append('image', file);

@@ -200,6 +200,9 @@ function initializeDatabase(overridePath) {
   } catch (_) {}
   try { db.exec("ALTER TABLE services ADD COLUMN category_id INTEGER REFERENCES categories(id)"); } catch (_) {}
 
+  // Migrate: worker-specific services
+  try { db.exec(`CREATE TABLE IF NOT EXISTS worker_services (worker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, service_id INTEGER NOT NULL REFERENCES services(id) ON DELETE CASCADE, PRIMARY KEY (worker_id, service_id))`); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

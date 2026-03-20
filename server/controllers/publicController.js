@@ -29,13 +29,16 @@ const getPublicServices = (req, res) => {
 };
 
 const getPublicWorkers = (req, res) => {
+  const { serviceId } = req.query;
   const db = getDb();
-  const workers = db.prepare(`
-    SELECT id, name
-    FROM users
-    WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1
-    ORDER BY name
-  `).all(req.business.id);
+  const params = [req.business.id];
+  let query = `SELECT id, name FROM users WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1`;
+  if (serviceId) {
+    query += ` AND (NOT EXISTS (SELECT 1 FROM worker_services WHERE worker_id = users.id) OR EXISTS (SELECT 1 FROM worker_services WHERE worker_id = users.id AND service_id = ?))`;
+    params.push(Number(serviceId));
+  }
+  query += ' ORDER BY name';
+  const workers = db.prepare(query).all(...params);
   res.json({ success: true, workers });
 };
 
@@ -56,9 +59,7 @@ const getPublicSlots = (req, res) => {
     return res.json({ success: true, slots, bookedSlots });
   }
 
-  const workers = db.prepare(`
-    SELECT id FROM users WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1
-  `).all(businessId);
+  const workers = db.prepare(`SELECT id FROM users WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1 AND (NOT EXISTS (SELECT 1 FROM worker_services WHERE worker_id = users.id) OR EXISTS (SELECT 1 FROM worker_services WHERE worker_id = users.id AND service_id = ?))`).all(businessId, Number(serviceId));
 
   const possibleSet = {};
   const availableSlots = {};
@@ -87,7 +88,7 @@ const getPublicAvailableDays = (req, res) => {
   const businessId = req.business.id;
   const workers = workerId
     ? [{ id: Number(workerId) }]
-    : db.prepare("SELECT id FROM users WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1").all(businessId);
+    : db.prepare("SELECT id FROM users WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1 AND (NOT EXISTS (SELECT 1 FROM worker_services WHERE worker_id = users.id) OR EXISTS (SELECT 1 FROM worker_services WHERE worker_id = users.id AND service_id = ?))").all(businessId, Number(serviceId));
 
   const yearNum = parseInt(year);
   const monthNum = parseInt(month);

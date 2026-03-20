@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getWorkers, createWorker, updateWorker, deleteWorker, getWorkerAvailability } from '../../api/admin';
+import { getWorkers, createWorker, updateWorker, deleteWorker, getWorkerAvailability, getServices, getWorkerServices, updateWorkerServices } from '../../api/admin';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Modal from '../../components/common/Modal';
 import { useToast } from '../../hooks/useToast';
@@ -19,10 +19,19 @@ export default function AdminWorkers() {
   const [submitting, setSubmitting] = useState(false);
   const { addToast } = useToast();
 
+  // Services modal state
+  const [showServicesModal, setShowServicesModal] = useState(false);
+  const [servicesWorker, setServicesWorker] = useState(null);
+  const [allServices, setAllServices] = useState([]);
+  const [workerServiceIds, setWorkerServiceIds] = useState([]);
+  const [savingServices, setSavingServices] = useState(false);
+  const [allServicesToggle, setAllServicesToggle] = useState(true);
+
   const load = async () => {
     try {
-      const data = await getWorkers();
-      setWorkers(data.workers || []);
+      const [workersData, servicesData] = await Promise.allSettled([getWorkers(), getServices()]);
+      if (workersData.status === 'fulfilled') setWorkers(workersData.value.workers || []);
+      if (servicesData.status === 'fulfilled') setAllServices(servicesData.value.services || []);
     } catch (e) {
       addToast('שגיאה בטעינת העובדים', 'error');
     } finally {
@@ -103,6 +112,41 @@ export default function AdminWorkers() {
     }
   };
 
+  const openServices = async (worker) => {
+    setServicesWorker(worker);
+    try {
+      const data = await getWorkerServices(worker.id);
+      const ids = data.serviceIds || [];
+      setWorkerServiceIds(ids);
+      setAllServicesToggle(ids.length === 0);
+    } catch {
+      setWorkerServiceIds([]);
+      setAllServicesToggle(true);
+    }
+    setShowServicesModal(true);
+  };
+
+  const handleSaveServices = async () => {
+    if (!servicesWorker) return;
+    setSavingServices(true);
+    try {
+      const serviceIds = allServicesToggle ? [] : workerServiceIds;
+      await updateWorkerServices(servicesWorker.id, serviceIds);
+      addToast('השירותים עודכנו בהצלחה');
+      setShowServicesModal(false);
+    } catch {
+      addToast('שגיאה בשמירת השירותים', 'error');
+    } finally {
+      setSavingServices(false);
+    }
+  };
+
+  const toggleServiceId = (id) => {
+    setWorkerServiceIds(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
+  };
+
   const adminWorkers = workers.filter(w => w.role === 'admin');
   const regularWorkers = workers.filter(w => w.role === 'worker');
 
@@ -143,6 +187,12 @@ export default function AdminWorkers() {
             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium px-2 py-1"
           >
             🗓 זמינות
+          </button>
+          <button
+            onClick={() => openServices(admin)}
+            className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-xs font-medium px-2 py-1"
+          >
+            ✂️ שירותים
           </button>
         </div>
       ))}
@@ -189,6 +239,13 @@ export default function AdminWorkers() {
                         title="זמינות"
                       >
                         🗓 זמינות
+                      </button>
+                      <button
+                        onClick={() => openServices(worker)}
+                        className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-xs font-medium px-2 py-1"
+                        title="שירותים"
+                      >
+                        ✂️ שירותים
                       </button>
                       <button
                         onClick={() => openEdit(worker)}
@@ -326,6 +383,71 @@ export default function AdminWorkers() {
             </div>
           </div>
         ) : null}
+      </Modal>
+
+      {/* Services Modal */}
+      <Modal
+        isOpen={showServicesModal}
+        onClose={() => setShowServicesModal(false)}
+        title={`שירותים: ${servicesWorker?.name || '...'}`}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p className="text-sm font-medium text-gray-800">כל השירותים</p>
+              <p className="text-xs text-gray-500 mt-0.5">העובד יכול לבצע את כל השירותים</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAllServicesToggle(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${allServicesToggle ? 'bg-indigo-600' : 'bg-gray-200'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${allServicesToggle ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+
+          {!allServicesToggle && (
+            <div>
+              <p className="text-xs text-gray-500 mb-2">בחר שירותים ספציפיים שהעובד מבצע:</p>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {allServices.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">אין שירותים במערכת</p>
+                ) : allServices.map(service => (
+                  <label key={service.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={workerServiceIds.includes(service.id)}
+                      onChange={() => toggleServiceId(service.id)}
+                      className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-800">{service.name}</span>
+                      <span className="text-xs text-gray-400 mr-2">{service.duration_minutes} דק' • ₪{service.price}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleSaveServices}
+              disabled={savingServices}
+              className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              {savingServices ? 'שומר...' : 'שמור'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowServicesModal(false)}
+              className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+            >
+              ביטול
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Edit Modal */}

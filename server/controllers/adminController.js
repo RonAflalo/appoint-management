@@ -789,6 +789,69 @@ const deleteRecurringRule = (req, res) => {
   res.json({ success: true });
 };
 
+// ---- Worker Services ----
+
+const getWorkerServices = (req, res) => {
+  const db = getDb();
+  const workerId = Number(req.params.id);
+  const worker = db.prepare('SELECT id FROM users WHERE id = ? AND business_id = ?').get(workerId, req.user.business_id);
+  if (!worker) return res.status(404).json({ success: false, message: 'עובד לא נמצא' });
+  const assignments = db.prepare('SELECT service_id FROM worker_services WHERE worker_id = ?').all(workerId);
+  res.json({ success: true, serviceIds: assignments.map(a => a.service_id) });
+};
+
+const updateWorkerServices = (req, res) => {
+  const db = getDb();
+  const workerId = Number(req.params.id);
+  const { serviceIds } = req.body;
+  const worker = db.prepare('SELECT id FROM users WHERE id = ? AND business_id = ?').get(workerId, req.user.business_id);
+  if (!worker) return res.status(404).json({ success: false, message: 'עובד לא נמצא' });
+  db.prepare('DELETE FROM worker_services WHERE worker_id = ?').run(workerId);
+  const insert = db.prepare('INSERT OR IGNORE INTO worker_services (worker_id, service_id) VALUES (?, ?)');
+  for (const sid of (serviceIds || [])) insert.run(workerId, Number(sid));
+  res.json({ success: true });
+};
+
+// ---- Dashboard Stats ----
+
+const getDashboardStats = (req, res) => {
+  const db = getDb();
+  const businessId = req.user.business_id;
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+  const pad = n => String(n).padStart(2, '0');
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+
+  // Month boundaries
+  const thisMonthStart = `${now.getFullYear()}-${pad(now.getMonth()+1)}-01`;
+  const nextM = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  const nextMonthStart = `${nextM.getFullYear()}-${pad(nextM.getMonth()+1)}-01`;
+  const lastM = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const lastMonthStart = `${lastM.getFullYear()}-${pad(lastM.getMonth()+1)}-01`;
+
+  const revThisMonth = db.prepare(`SELECT COALESCE(SUM(s.price),0) as total FROM appointments a JOIN services s ON a.service_id=s.id WHERE a.business_id=? AND a.status IN('confirmed','completed') AND a.start_time>=? AND a.start_time<?`).get(businessId, thisMonthStart, nextMonthStart).total;
+  const revLastMonth = db.prepare(`SELECT COALESCE(SUM(s.price),0) as total FROM appointments a JOIN services s ON a.service_id=s.id WHERE a.business_id=? AND a.status IN('confirmed','completed') AND a.start_time>=? AND a.start_time<?`).get(businessId, lastMonthStart, thisMonthStart).total;
+
+  // Past 7 days revenue (including today)
+  const weeklyRevenue = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const row = db.prepare(`SELECT COALESCE(SUM(s.price),0) as rev FROM appointments a JOIN services s ON a.service_id=s.id WHERE a.business_id=? AND a.status IN('confirmed','completed') AND date(a.start_time)=?`).get(businessId, ds);
+    weeklyRevenue.push({ date: ds, revenue: row.rev });
+  }
+
+  // Next 7 days appointment count (including today)
+  const upcomingByDay = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now); d.setDate(d.getDate() + i);
+    const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const row = db.prepare(`SELECT COUNT(*) as cnt FROM appointments WHERE business_id=? AND status IN('pending','confirmed') AND date(start_time)=?`).get(businessId, ds);
+    upcomingByDay.push({ date: ds, count: row.cnt });
+  }
+
+  res.json({ success: true, revenueThisMonth: revThisMonth, revenueLastMonth: revLastMonth, weeklyRevenue, upcomingByDay });
+};
+
 // ---- Google Calendar ----
 
 const getCalendarStatus = (req, res) => {
@@ -807,6 +870,7 @@ module.exports = {
   getWorkers, createWorker, updateWorker, deleteWorker,
   toggleAdminAsWorker,
   getWorkerAvailability,
+  getWorkerServices, updateWorkerServices,
   getWorkersCalendar, getWorkersDayDetail,
   getServices, createService, updateService, deleteService,
   getAppointments, updateAppointmentStatus, requestReschedule,
@@ -814,6 +878,7 @@ module.exports = {
   getCustomers, getCustomerDetail, updateCustomerNotes,
   completeOnboarding,
   getAnalytics,
+  getDashboardStats,
   getStore, toggleStore, createProduct, updateProduct, deleteProduct,
   getCategories, createCategory, updateCategory, deleteCategory,
   getRecurringRules, createRecurringRule, updateRecurringRule, deleteRecurringRule,

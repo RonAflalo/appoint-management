@@ -43,6 +43,7 @@ export default function PublicBooking() {
   const [loadingData, setLoadingData] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loadingDays, setLoadingDays] = useState(false);
+  const [loadingWorkers, setLoadingWorkers] = useState(false);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
@@ -76,10 +77,9 @@ export default function PublicBooking() {
   useEffect(() => {
     if (!business) return;
     setLoadingData(true);
-    Promise.all([getPublicServices(slug), getPublicWorkers(slug)])
-      .then(([sData, wData]) => {
+    getPublicServices(slug)
+      .then(sData => {
         setServices(sData.services || []);
-        setWorkers(wData.workers || []);
       })
       .catch(() => {})
       .finally(() => setLoadingData(false));
@@ -190,6 +190,14 @@ export default function PublicBooking() {
   };
 
   const goNext = () => {
+    if (step === 1 && selectedService) {
+      // About to show workers: load workers filtered by selected service
+      setLoadingWorkers(true);
+      getPublicWorkers(slug, selectedService.id)
+        .then(d => setWorkers(d.workers || []))
+        .catch(() => {})
+        .finally(() => setLoadingWorkers(false));
+    }
     if (step === 2) {
       fetchUnavailableDays(selectedDate || new Date());
       if (selectedDate) fetchSlots(selectedDate);
@@ -239,7 +247,7 @@ export default function PublicBooking() {
     );
   }
 
-  if (!loadingBusiness && !notFound && !loadingData && workers.length === 0) {
+  if (!loadingBusiness && !notFound && !loadingData && !loadingWorkers && step >= 2 && workers.length === 0) {
     return (
       <div dir="rtl" className="min-h-screen bg-gray-50">
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
@@ -504,34 +512,42 @@ export default function PublicBooking() {
             {/* Step 2: Worker */}
             {step === 2 && (
               <div className="space-y-3">
-                <button
-                  onClick={() => setSelectedWorker(null)}
-                  className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-right
-                    ${selectedWorker === null ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                    כ
+                {loadingWorkers ? (
+                  <div className="py-6 flex justify-center">
+                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"></div>
                   </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">כל עובד זמין</div>
-                    <div className="text-sm text-gray-500">הצג שעות זמינות לכל העובדים</div>
-                  </div>
-                  {selectedWorker === null && <span className="mr-auto text-indigo-500 text-lg">✓</span>}
-                </button>
-                {workers.map(worker => (
-                  <button
-                    key={worker.id}
-                    onClick={() => setSelectedWorker(worker)}
-                    className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-right
-                      ${selectedWorker?.id === worker.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                      {worker.name[0]}
-                    </div>
-                    <div className="font-semibold text-gray-900">{worker.name}</div>
-                    {selectedWorker?.id === worker.id && <span className="mr-auto text-indigo-500 text-lg">✓</span>}
-                  </button>
-                ))}
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setSelectedWorker(null)}
+                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-right
+                        ${selectedWorker === null ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                        כ
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900">כל עובד זמין</div>
+                        <div className="text-sm text-gray-500">הצג שעות זמינות לכל העובדים</div>
+                      </div>
+                      {selectedWorker === null && <span className="mr-auto text-indigo-500 text-lg">✓</span>}
+                    </button>
+                    {workers.map(worker => (
+                      <button
+                        key={worker.id}
+                        onClick={() => setSelectedWorker(worker)}
+                        className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-right
+                          ${selectedWorker?.id === worker.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
+                      >
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                          {worker.name[0]}
+                        </div>
+                        <div className="font-semibold text-gray-900">{worker.name}</div>
+                        {selectedWorker?.id === worker.id && <span className="mr-auto text-indigo-500 text-lg">✓</span>}
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
             )}
 

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAppointments, getWorkers, getSettings, updateAppointmentStatus, requestAdminReschedule } from '../../api/admin';
+import { getAppointments, getWorkers, getSettings, updateAppointmentStatus, requestAdminReschedule, getDashboardStats } from '../../api/admin';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
 import Modal from '../../components/common/Modal';
 import { formatDateTime, toDateString } from '../../utils/dateUtils';
 import { useToast } from '../../hooks/useToast';
+
+const HE_DAYS_SHORT = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
 
 export default function AdminDashboard() {
   const [appointments, setAppointments] = useState([]);
@@ -19,23 +21,26 @@ export default function AdminDashboard() {
   const [rescheduleTime, setRescheduleTime] = useState('');
   const [rescheduleNote, setRescheduleNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [dashStats, setDashStats] = useState(null);
   const { addToast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       getAppointments({}),
       getWorkers(),
       getSettings(),
-    ]).then(([apptData, workersData, settingsData]) => {
-      setAppointments(apptData.appointments || []);
-      setWorkers(workersData.workers || []);
-      if (settingsData.business?.slug) {
-        setSlug(settingsData.business.slug);
+      getDashboardStats(),
+    ]).then(([apptRes, workersRes, settingsRes, statsRes]) => {
+      if (apptRes.status === 'fulfilled') setAppointments(apptRes.value.appointments || []);
+      if (workersRes.status === 'fulfilled') setWorkers(workersRes.value.workers || []);
+      if (settingsRes.status === 'fulfilled') {
+        if (settingsRes.value.business?.slug) setSlug(settingsRes.value.business.slug);
+        if (settingsRes.value.business?.onboarding_complete === 0) {
+          navigate('/admin/onboarding', { replace: true });
+        }
       }
-      if (settingsData.business?.onboarding_complete === 0) {
-        navigate('/admin/onboarding', { replace: true });
-      }
+      if (statsRes.status === 'fulfilled') setDashStats(statsRes.value);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -57,6 +62,12 @@ export default function AdminDashboard() {
   const recentAppointments = appointments.slice(0, 10);
 
   const activeWorkers = workers.filter(w => w.is_active);
+
+  const revenueThisMonth = dashStats?.revenueThisMonth ?? null;
+  const revenueLastMonth = dashStats?.revenueLastMonth ?? null;
+  const revPctChange = revenueLastMonth && revenueLastMonth > 0
+    ? Math.round(((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100)
+    : null;
 
   const stats = [
     { label: 'תורים היום', value: todayAppointments.length, color: 'bg-blue-500', icon: '📅' },
@@ -143,7 +154,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {stats.map((stat, i) => (
           <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center gap-3 mb-3">
@@ -155,6 +166,93 @@ export default function AdminDashboard() {
             <div className="text-sm text-gray-500 mt-1">{stat.label}</div>
           </div>
         ))}
+        {/* Revenue this month card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-white text-lg">💰</div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900">
+            {revenueThisMonth !== null ? `₪${revenueThisMonth.toLocaleString()}` : '—'}
+          </div>
+          <div className="text-sm text-gray-500 mt-1">הכנסות החודש</div>
+          {revPctChange !== null && (
+            <div className={`text-xs font-medium mt-1 ${revPctChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {revPctChange >= 0 ? '▲' : '▼'} {Math.abs(revPctChange)}% מהחודש שעבר
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Weekly Revenue Chart + Upcoming Strip */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        {/* Weekly revenue bar chart */}
+        {dashStats?.weeklyRevenue && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">הכנסות — 7 הימים האחרונים</h3>
+            {(() => {
+              const data = dashStats.weeklyRevenue;
+              const maxRev = Math.max(...data.map(d => d.revenue), 1);
+              return (
+                <div className="flex items-end gap-1.5 h-28">
+                  {data.map((d, i) => {
+                    const dateObj = new Date(d.date + 'T00:00:00');
+                    const dayShort = HE_DAYS_SHORT[dateObj.getDay()];
+                    const barH = Math.max((d.revenue / maxRev) * 100, d.revenue > 0 ? 4 : 0);
+                    const isToday = d.date === today;
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        {d.revenue > 0 && (
+                          <span className="text-xs text-gray-400" style={{ fontSize: '10px' }}>₪{d.revenue}</span>
+                        )}
+                        <div className="w-full flex items-end" style={{ height: '80px' }}>
+                          <div
+                            className={`w-full rounded-t-md transition-all ${isToday ? 'bg-indigo-500' : 'bg-indigo-200'}`}
+                            style={{ height: `${barH}%` }}
+                            title={`${d.date}: ₪${d.revenue}`}
+                          />
+                        </div>
+                        <span className={`text-xs font-medium ${isToday ? 'text-indigo-600' : 'text-gray-400'}`}>{dayShort}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* 7-day upcoming appointments strip */}
+        {dashStats?.upcomingByDay && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">תורים — 7 ימים קרובים</h3>
+            <div className="grid grid-cols-7 gap-1">
+              {dashStats.upcomingByDay.map((d, i) => {
+                const dateObj = new Date(d.date + 'T00:00:00');
+                const dayShort = HE_DAYS_SHORT[dateObj.getDay()];
+                const dayNum = dateObj.getDate();
+                const isToday = d.date === today;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => navigate('/admin/appointments')}
+                    className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all cursor-pointer hover:border-indigo-300
+                      ${isToday ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:bg-gray-50'}`}
+                  >
+                    <span className={`text-xs font-semibold ${isToday ? 'text-indigo-600' : 'text-gray-500'}`}>{dayShort}</span>
+                    <span className={`text-sm font-bold mt-0.5 ${isToday ? 'text-indigo-700' : 'text-gray-800'}`}>{dayNum}</span>
+                    {d.count > 0 ? (
+                      <span className={`mt-1 text-xs font-bold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                        {d.count}
+                      </span>
+                    ) : (
+                      <span className="mt-1 text-xs text-gray-300">—</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Booking link card */}

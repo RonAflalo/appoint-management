@@ -6,6 +6,7 @@ const {
   getWorkers, createWorker, updateWorker, deleteWorker,
   toggleAdminAsWorker,
   getWorkerAvailability,
+  getWorkerServices, updateWorkerServices,
   getWorkersCalendar, getWorkersDayDetail,
   getServices, createService, updateService, deleteService,
   getAppointments, updateAppointmentStatus, requestReschedule,
@@ -13,6 +14,7 @@ const {
   getCustomers, getCustomerDetail, updateCustomerNotes,
   completeOnboarding,
   getAnalytics,
+  getDashboardStats,
   getStore, toggleStore, createProduct, updateProduct, deleteProduct,
   getCategories, createCategory, updateCategory, deleteCategory,
   getRecurringRules, createRecurringRule, updateRecurringRule, deleteRecurringRule,
@@ -27,6 +29,8 @@ router.patch('/me/worker-toggle', toggleAdminAsWorker);
 router.put('/workers/:id', updateWorker);
 router.delete('/workers/:id', deleteWorker);
 router.get('/workers/:id/availability', getWorkerAvailability);
+router.get('/workers/:id/services', getWorkerServices);
+router.put('/workers/:id/services', updateWorkerServices);
 
 router.get('/categories', getCategories);
 router.post('/categories', createCategory);
@@ -54,6 +58,7 @@ router.get('/customers/:id', getCustomerDetail);
 router.put('/customers/:id/notes', updateCustomerNotes);
 router.post('/onboarding/complete', completeOnboarding);
 router.get('/analytics', getAnalytics);
+router.get('/dashboard-stats', getDashboardStats);
 
 router.get('/store', getStore);
 router.post('/store/toggle', toggleStore);
