@@ -65,11 +65,11 @@ export default function ThreeDotMenu({ items }) {
         onClick={handleOpen}
         className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="8" cy="3" r="1.5" />
-          <circle cx="8" cy="8" r="1.5" />
-          <circle cx="8" cy="13" r="1.5" />
-        </svg>
+        <span className="flex flex-col items-center gap-[3px]">
+          <span className="block w-[4px] h-[4px] rounded-full bg-current" />
+          <span className="block w-[4px] h-[4px] rounded-full bg-current" />
+          <span className="block w-[4px] h-[4px] rounded-full bg-current" />
+        </span>
       </button>
       {createPortal(dropdown, document.body)}
     </div>
