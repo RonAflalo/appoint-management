@@ -9,7 +9,7 @@ const { notifyNextInQueue } = require('../utils/waitlist');
 const getWorkers = (req, res) => {
   const db = getDb();
   const workers = db.prepare(`
-    SELECT id, name, email, role, is_worker, is_active, created_at
+    SELECT id, name, email, role, is_worker, is_active, deleted_at, created_at
     FROM users
     WHERE (role = 'worker' OR role = 'admin') AND business_id = ?
     ORDER BY role DESC, created_at DESC
@@ -54,11 +54,19 @@ const updateWorker = (req, res) => {
 
 const deleteWorker = (req, res) => {
   const { id } = req.params;
+  const { password } = req.body;
   const db = getDb();
+  if (!password) {
+    return res.status(400).json({ success: false, message: 'נדרשת סיסמת מנהל' });
+  }
+  const admin = db.prepare('SELECT password_hash FROM users WHERE id = ? AND role = ?').get(req.user.id, 'admin');
+  if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
+    return res.status(401).json({ success: false, message: 'סיסמה שגויה' });
+  }
   const worker = db.prepare("SELECT id FROM users WHERE id = ? AND role = 'worker' AND business_id = ?").get(id, req.user.business_id);
   if (!worker) return res.status(404).json({ success: false, message: 'עובד לא נמצא' });
-  db.prepare('UPDATE users SET is_active = 0 WHERE id = ?').run(id);
-  res.json({ success: true, message: 'העובד הושבת' });
+  db.prepare("UPDATE users SET deleted_at = datetime('now'), is_active = 0 WHERE id = ?").run(id);
+  res.json({ success: true, message: 'העובד הוסר' });
 };
 
 // ---- Services ----
@@ -496,7 +504,17 @@ const getCustomerDetail = (req, res) => {
     ORDER BY a.start_time DESC
   `).all(id, req.user.business_id);
 
-  res.json({ success: true, customer, appointments });
+  const allPhotos = db.prepare(
+    'SELECT appointment_id, id, url, created_at FROM appointment_photos WHERE appointment_id IN (SELECT id FROM appointments WHERE customer_id = ? AND business_id = ?)'
+  ).all(id, req.user.business_id);
+  const photoMap = {};
+  for (const p of allPhotos) {
+    if (!photoMap[p.appointment_id]) photoMap[p.appointment_id] = [];
+    photoMap[p.appointment_id].push({ id: p.id, url: p.url, created_at: p.created_at });
+  }
+  const appointmentsWithPhotos = appointments.map(a => ({ ...a, photos: photoMap[a.id] || [] }));
+
+  res.json({ success: true, customer, appointments: appointmentsWithPhotos });
 };
 
 const updateCustomerNotes = (req, res) => {
@@ -852,6 +870,46 @@ const getDashboardStats = (req, res) => {
   res.json({ success: true, revenueThisMonth: revThisMonth, revenueLastMonth: revLastMonth, weeklyRevenue, upcomingByDay });
 };
 
+// ---- Appointment Photos ----
+
+const getAppointmentPhotos = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const appt = db.prepare('SELECT id FROM appointments WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
+  if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
+  const photos = db.prepare('SELECT id, url, created_at FROM appointment_photos WHERE appointment_id = ? ORDER BY created_at ASC').all(id);
+  res.json({ success: true, photos });
+};
+
+const addAppointmentPhoto = (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const appt = db.prepare('SELECT id FROM appointments WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
+  if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
+  if (!req.file) return res.status(400).json({ success: false, message: 'לא נמצאה תמונה' });
+  const url = `/uploads/${req.file.filename}`;
+  const result = db.prepare('INSERT INTO appointment_photos (appointment_id, url, uploaded_by) VALUES (?, ?, ?)').run(id, url, req.user.id);
+  const photo = db.prepare('SELECT id, url, created_at FROM appointment_photos WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json({ success: true, photo });
+};
+
+const deleteAppointmentPhoto = (req, res) => {
+  const { id, photoId } = req.params;
+  const db = getDb();
+  const appt = db.prepare('SELECT id FROM appointments WHERE id = ? AND business_id = ?').get(id, req.user.business_id);
+  if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
+  const photo = db.prepare('SELECT id, url FROM appointment_photos WHERE id = ? AND appointment_id = ?').get(photoId, id);
+  if (!photo) return res.status(404).json({ success: false, message: 'תמונה לא נמצאה' });
+  db.prepare('DELETE FROM appointment_photos WHERE id = ?').run(photoId);
+  try {
+    const fs = require('fs');
+    const pathMod = require('path');
+    const filePath = pathMod.join(__dirname, '..', photo.url);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch (_) {}
+  res.json({ success: true });
+};
+
 // ---- Google Calendar ----
 
 const getCalendarStatus = (req, res) => {
@@ -883,4 +941,5 @@ module.exports = {
   getCategories, createCategory, updateCategory, deleteCategory,
   getRecurringRules, createRecurringRule, updateRecurringRule, deleteRecurringRule,
   getCalendarStatus, disconnectCalendar,
+  getAppointmentPhotos, addAppointmentPhoto, deleteAppointmentPhoto,
 };

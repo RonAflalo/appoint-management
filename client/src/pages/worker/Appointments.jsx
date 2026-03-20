@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   getWorkerAppointments,
   updateWorkerAppointmentStatus,
   approveAppointment,
   cancelAppointmentByWorker,
   requestReschedule,
+  getWorkerApptPhotos,
+  addWorkerApptPhoto,
+  deleteWorkerApptPhoto,
 } from '../../api/worker';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusBadge from '../../components/common/StatusBadge';
 import Modal from '../../components/common/Modal';
+import ThreeDotMenu from '../../components/common/ThreeDotMenu';
 import { formatDateTime } from '../../utils/dateUtils';
 import { useToast } from '../../hooks/useToast';
 
@@ -29,6 +33,10 @@ export default function WorkerAppointments() {
 
   // Detail modal
   const [detailAppt, setDetailAppt] = useState(null);
+  const [apptPhotos, setApptPhotos] = useState([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef(null);
 
   // Reschedule modal
   const [rescheduleModal, setRescheduleModal] = useState(false);
@@ -52,12 +60,21 @@ export default function WorkerAppointments() {
 
   useEffect(() => { load(activeTab); }, [activeTab]);
 
+  // Fetch photos when detail modal opens
+  useEffect(() => {
+    if (!detailAppt) { setApptPhotos([]); return; }
+    setPhotosLoading(true);
+    getWorkerApptPhotos(detailAppt.id)
+      .then(data => setApptPhotos(data.photos || []))
+      .catch(() => {})
+      .finally(() => setPhotosLoading(false));
+  }, [detailAppt?.id]);
+
   const withBusy = async (id, fn, successMsg) => {
     setBusy(id);
     try {
       await fn();
       addToast(successMsg);
-      // Close detail modal if it was for this appointment
       setDetailAppt(prev => prev?.id === id ? null : prev);
       load(activeTab);
     } catch (e) {
@@ -110,59 +127,65 @@ export default function WorkerAppointments() {
     }
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !detailAppt) return;
+    setPhotoUploading(true);
+    try {
+      const data = await addWorkerApptPhoto(detailAppt.id, file);
+      setApptPhotos(prev => [...prev, data.photo]);
+    } catch {
+      addToast('שגיאה בהעלאת תמונה', 'error');
+    } finally {
+      setPhotoUploading(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
+
+  const handleDeletePhoto = async (photoId) => {
+    if (!detailAppt) return;
+    try {
+      await deleteWorkerApptPhoto(detailAppt.id, photoId);
+      setApptPhotos(prev => prev.filter(p => p.id !== photoId));
+    } catch {
+      addToast('שגיאה במחיקת תמונה', 'error');
+    }
+  };
+
+  const getMenuItems = (appt) => {
+    const items = [];
+    if (appt.status === 'pending') {
+      items.push({ label: 'אשר', icon: '✓', onClick: () => handleApprove(appt.id) });
+      items.push({ label: 'בטל', icon: '✕', onClick: () => handleCancel(appt.id), danger: true });
+    }
+    if (appt.status === 'confirmed') {
+      items.push({ label: 'הושלם', icon: '✓', onClick: () => handleComplete(appt.id) });
+      items.push({ label: 'שנה מועד', icon: '📅', onClick: () => openRescheduleModal(appt) });
+      items.push({ label: 'בטל', icon: '✕', onClick: () => handleCancel(appt.id), danger: true });
+    }
+    if (appt.status === 'reschedule_requested') {
+      items.push({ label: 'בטל תור', icon: '✕', onClick: () => handleCancel(appt.id), danger: true });
+    }
+    return items;
+  };
+
   const ActionButtons = ({ appt }) => (
     <div className="flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
       {appt.status === 'pending' && (
         <>
-          <button
-            onClick={() => handleApprove(appt.id)}
-            disabled={busy === appt.id}
-            className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-          >
-            {busy === appt.id ? '...' : 'אשר'}
-          </button>
-          <button
-            onClick={() => handleCancel(appt.id)}
-            disabled={busy === appt.id}
-            className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-          >
-            בטל
-          </button>
+          <button onClick={() => handleApprove(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">{busy === appt.id ? '...' : 'אשר'}</button>
+          <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">בטל</button>
         </>
       )}
       {appt.status === 'confirmed' && (
         <>
-          <button
-            onClick={() => handleComplete(appt.id)}
-            disabled={busy === appt.id}
-            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-          >
-            הושלם
-          </button>
-          <button
-            onClick={(e) => openRescheduleModal(appt, e)}
-            disabled={busy === appt.id}
-            className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-          >
-            שנה מועד
-          </button>
-          <button
-            onClick={() => handleCancel(appt.id)}
-            disabled={busy === appt.id}
-            className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-          >
-            בטל
-          </button>
+          <button onClick={() => handleComplete(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">הושלם</button>
+          <button onClick={(e) => openRescheduleModal(appt, e)} disabled={busy === appt.id} className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">שנה מועד</button>
+          <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">בטל</button>
         </>
       )}
       {appt.status === 'reschedule_requested' && (
-        <button
-          onClick={() => handleCancel(appt.id)}
-          disabled={busy === appt.id}
-          className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-        >
-          בטל תור
-        </button>
+        <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">בטל תור</button>
       )}
     </div>
   );
@@ -225,7 +248,7 @@ export default function WorkerAppointments() {
                     {formatDateTime(appt.start_time)}
                   </td>
                   <td className="px-4 py-3">
-                    <ActionButtons appt={appt} />
+                    <ThreeDotMenu items={getMenuItems(appt)} />
                   </td>
                 </tr>
               ))}
@@ -235,14 +258,9 @@ export default function WorkerAppointments() {
       )}
 
       {/* Detail Modal */}
-      <Modal
-        isOpen={!!detailAppt}
-        onClose={() => setDetailAppt(null)}
-        title="פרטי תור"
-      >
+      <Modal isOpen={!!detailAppt} onClose={() => setDetailAppt(null)} title="פרטי תור">
         {detailAppt && (
           <div className="space-y-4">
-            {/* Status */}
             <div className="flex items-center justify-between">
               <StatusBadge status={detailAppt.status} />
               {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
@@ -252,7 +270,6 @@ export default function WorkerAppointments() {
               )}
             </div>
 
-            {/* Customer */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
               <p className="text-xs text-gray-400 font-medium uppercase">לקוח</p>
               <p className="font-semibold text-gray-900">{detailAppt.customer_name}</p>
@@ -262,30 +279,16 @@ export default function WorkerAppointments() {
               )}
             </div>
 
-            {/* Appointment details */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
               <p className="text-xs text-gray-400 font-medium uppercase">פרטי התור</p>
               <div className="grid grid-cols-2 gap-y-2.5 text-sm">
-                <div>
-                  <p className="text-xs text-gray-400">שירות</p>
-                  <p className="text-gray-900 font-medium">{detailAppt.service_name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">מחיר</p>
-                  <p className="text-gray-900 font-medium">₪{detailAppt.price}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-xs text-gray-400">תאריך ושעה</p>
-                  <p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-xs text-gray-400">משך</p>
-                  <p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p>
-                </div>
+                <div><p className="text-xs text-gray-400">שירות</p><p className="text-gray-900 font-medium">{detailAppt.service_name}</p></div>
+                <div><p className="text-xs text-gray-400">מחיר</p><p className="text-gray-900 font-medium">₪{detailAppt.price}</p></div>
+                <div className="col-span-2"><p className="text-xs text-gray-400">תאריך ושעה</p><p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p></div>
+                <div className="col-span-2"><p className="text-xs text-gray-400">משך</p><p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p></div>
               </div>
             </div>
 
-            {/* Reschedule info */}
             {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm">
                 <p className="font-medium text-orange-800 mb-1">⏰ בקשת שינוי מועד נשלחה ללקוח</p>
@@ -296,7 +299,6 @@ export default function WorkerAppointments() {
               </div>
             )}
 
-            {/* Notes */}
             {detailAppt.notes && (
               <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 text-sm text-yellow-800">
                 <p className="text-xs text-yellow-600 font-medium mb-1">הערת לקוח</p>
@@ -304,7 +306,44 @@ export default function WorkerAppointments() {
               </div>
             )}
 
-            {/* Actions inside modal */}
+            {/* Photos */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-gray-400 font-medium uppercase">תמונות</p>
+                <label className={`text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-colors ${photoUploading ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}>
+                  {photoUploading ? 'מעלה...' : '+ הוסף תמונה'}
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                    disabled={photoUploading}
+                  />
+                </label>
+              </div>
+              {photosLoading ? (
+                <div className="text-xs text-gray-400 py-2">טוען תמונות...</div>
+              ) : apptPhotos.length === 0 ? (
+                <div className="text-xs text-gray-300 py-2">אין תמונות</div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {apptPhotos.map(photo => (
+                    <div key={photo.id} className="relative group">
+                      <img src={photo.url} alt="" className="w-full h-20 object-cover rounded-lg border border-gray-200" />
+                      <button
+                        onClick={() => handleDeletePhoto(photo.id)}
+                        className="absolute top-1 left-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="pt-1">
               <ActionButtons appt={detailAppt} />
             </div>
@@ -313,11 +352,7 @@ export default function WorkerAppointments() {
       </Modal>
 
       {/* Reschedule Request Modal */}
-      <Modal
-        isOpen={rescheduleModal}
-        onClose={() => setRescheduleModal(false)}
-        title="בקשת שינוי מועד"
-      >
+      <Modal isOpen={rescheduleModal} onClose={() => setRescheduleModal(false)} title="בקשת שינוי מועד">
         {rescheduleAppt && (
           <form onSubmit={handleRescheduleSubmit} className="space-y-4">
             <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
@@ -327,53 +362,22 @@ export default function WorkerAppointments() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">תאריך מוצע</label>
-              <input
-                type="date"
-                value={suggestedDate}
-                onChange={e => setSuggestedDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                required
-              />
+              <input type="date" value={suggestedDate} onChange={e => setSuggestedDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" required />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">שעה מוצעת</label>
-              <input
-                type="time"
-                value={suggestedTime}
-                onChange={e => setSuggestedTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                required
-              />
+              <input type="time" value={suggestedTime} onChange={e => setSuggestedTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" required />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">הערה ללקוח (אופציונלי)</label>
-              <textarea
-                value={rescheduleNote}
-                onChange={e => setRescheduleNote(e.target.value)}
-                placeholder="למשל: נא לאשר עד מחר..."
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
-              />
+              <textarea value={rescheduleNote} onChange={e => setRescheduleNote(e.target.value)} placeholder="למשל: נא לאשר עד מחר..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
             </div>
 
             <div className="flex gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={submittingReschedule}
-                className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg text-sm font-semibold transition-colors"
-              >
-                {submittingReschedule ? 'שולח...' : 'שלח ללקוח'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setRescheduleModal(false)}
-                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-              >
-                ביטול
-              </button>
+              <button type="submit" disabled={submittingReschedule} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg text-sm font-semibold transition-colors">{submittingReschedule ? 'שולח...' : 'שלח ללקוח'}</button>
+              <button type="button" onClick={() => setRescheduleModal(false)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">ביטול</button>
             </div>
           </form>
         )}

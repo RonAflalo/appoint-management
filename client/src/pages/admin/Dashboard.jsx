@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [rescheduleNote, setRescheduleNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [dashStats, setDashStats] = useState(null);
+  const [dashTab, setDashTab] = useState('upcoming');
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -59,7 +60,6 @@ export default function AdminDashboard() {
   const todayAppointments = appointments.filter(a => a.start_time.startsWith(today));
   const pendingAppointments = appointments.filter(a => a.status === 'pending');
   const customers = [...new Set(appointments.map(a => a.customer_id))];
-  const recentAppointments = appointments.slice(0, 10);
 
   const activeWorkers = workers.filter(w => w.is_active);
 
@@ -75,6 +75,29 @@ export default function AdminDashboard() {
     { label: 'עובדים פעילים', value: activeWorkers.length, color: 'bg-green-500', icon: '👥' },
     { label: 'לקוחות סה"כ', value: customers.length, color: 'bg-purple-500', icon: '👤' },
   ];
+
+  // Compute upcoming and past appointments for the dashboard tabs
+  // DB stores start_time as "YYYY-MM-DD HH:MM:SS", compare with "YYYY-MM-DD HH:MM"
+  const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  const tomorrowStr = toDateString(new Date(Date.now() + 86400000));
+
+  const todayUpcoming = appointments
+    .filter(a => a.start_time.startsWith(today) && a.start_time > nowStr && ['pending', 'confirmed'].includes(a.status))
+    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  const tomorrowUpcoming = appointments
+    .filter(a => a.start_time.startsWith(tomorrowStr) && ['pending', 'confirmed'].includes(a.status))
+    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  const upcomingAppointments = todayUpcoming.length > 0 ? todayUpcoming : tomorrowUpcoming;
+  const upcomingDayLabel = todayUpcoming.length > 0 ? 'היום' : 'מחר';
+
+  const pastAppointments = appointments
+    .filter(a => ['completed', 'cancelled'].includes(a.status))
+    .sort((a, b) => b.start_time.localeCompare(a.start_time))
+    .slice(0, 10);
+
+  const tabAppointments = dashTab === 'upcoming' ? upcomingAppointments : pastAppointments;
 
   const handleStatus = async (id, status) => {
     try {
@@ -166,7 +189,6 @@ export default function AdminDashboard() {
             <div className="text-sm text-gray-500 mt-1">{stat.label}</div>
           </div>
         ))}
-        {/* Revenue this month card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-white text-lg">💰</div>
@@ -184,8 +206,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Weekly Revenue Chart + Upcoming Strip */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-        {/* Weekly revenue bar chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         {dashStats?.weeklyRevenue && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">הכנסות — 7 הימים האחרונים</h3>
@@ -221,7 +242,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 7-day upcoming appointments strip */}
+        {/* 7-day upcoming appointments strip — click navigates with date filter */}
         {dashStats?.upcomingByDay && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">תורים — 7 ימים קרובים</h3>
@@ -234,7 +255,7 @@ export default function AdminDashboard() {
                 return (
                   <button
                     key={i}
-                    onClick={() => navigate('/admin/appointments')}
+                    onClick={() => navigate(`/admin/appointments?date=${d.date}`)}
                     className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all cursor-pointer hover:border-indigo-300
                       ${isToday ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:bg-gray-50'}`}
                   >
@@ -257,7 +278,7 @@ export default function AdminDashboard() {
 
       {/* Booking link card */}
       {bookingLink && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center text-white text-lg">🔗</div>
             <div>
@@ -287,47 +308,50 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Recent appointments */}
+      {/* Appointments section with tab toggle */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">תורים אחרונים</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {dashTab === 'upcoming' ? `תורים ${upcomingDayLabel}` : 'תורים — עבר'}
+          </h2>
+          <div className="flex bg-gray-100 p-1 rounded-lg gap-1">
+            <button
+              onClick={() => setDashTab('upcoming')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${dashTab === 'upcoming' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              קרובים
+            </button>
+            <button
+              onClick={() => setDashTab('past')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${dashTab === 'past' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              עבר
+            </button>
+          </div>
         </div>
-        {recentAppointments.length === 0 ? (
+        {tabAppointments.length === 0 ? (
           <div className="p-8 text-center text-gray-400">
             <span className="text-4xl mb-3 block">📅</span>
-            <p>אין תורים להצגה</p>
+            <p>{dashTab === 'upcoming' ? 'אין תורים קרובים' : 'אין תורים עבר'}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-gray-600 text-xs uppercase">
-                  <th className="px-4 py-3 text-right font-medium">לקוח</th>
-                  <th className="px-4 py-3 text-right font-medium">עובד</th>
-                  <th className="px-4 py-3 text-right font-medium">שירות</th>
-                  <th className="px-4 py-3 text-right font-medium">תאריך ושעה</th>
-                  <th className="px-4 py-3 text-right font-medium">פעולות</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {recentAppointments.map(appt => (
-                  <tr key={appt.id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setDetailAppt(appt)}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">{appt.customer_name}</span>
-                        <StatusBadge status={appt.status} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{appt.worker_name}</td>
-                    <td className="px-4 py-3 text-gray-600">{appt.service_name}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDateTime(appt.start_time)}</td>
-                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      <ActionButtons appt={appt} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-gray-50">
+            {tabAppointments.map(appt => (
+              <div
+                key={appt.id}
+                className="px-6 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between gap-4"
+                onClick={() => setDetailAppt(appt)}
+              >
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 text-sm truncate">{appt.customer_name}</div>
+                  <div className="text-xs text-gray-500 truncate">{appt.service_name} • {appt.worker_name}</div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="text-xs text-gray-500 whitespace-nowrap">{formatDateTime(appt.start_time)}</div>
+                  <StatusBadge status={appt.status} />
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

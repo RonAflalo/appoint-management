@@ -19,6 +19,7 @@ const {
   getCategories, createCategory, updateCategory, deleteCategory,
   getRecurringRules, createRecurringRule, updateRecurringRule, deleteRecurringRule,
   getCalendarStatus, disconnectCalendar,
+  getAppointmentPhotos, addAppointmentPhoto, deleteAppointmentPhoto,
 } = require('../controllers/adminController');
 
 router.use(authenticate, authorize('admin'));
@@ -45,6 +46,9 @@ router.delete('/services/:id', deleteService);
 router.get('/appointments', getAppointments);
 router.put('/appointments/:id/status', updateAppointmentStatus);
 router.post('/appointments/:id/reschedule', requestReschedule);
+router.get('/appointments/:id/photos', getAppointmentPhotos);
+router.post('/appointments/:id/photos', upload.single('image'), addAppointmentPhoto);
+router.delete('/appointments/:id/photos/:photoId', deleteAppointmentPhoto);
 
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);

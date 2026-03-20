@@ -109,7 +109,8 @@ describe('DELETE /api/admin/workers/:id', () => {
 
     const res = await request(app)
       .delete(`/api/admin/workers/${workerId}`)
-      .set('Cookie', adminCookie());
+      .set('Cookie', adminCookie())
+      .send({ password: 'password123' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
 

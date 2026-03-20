@@ -119,6 +119,18 @@ export default function AdminCustomerDetail() {
                         {appt.price > 0 && <span className="text-sm font-semibold text-gray-700">₪{appt.price}</span>}
                       </div>
                     </div>
+                    {appt.photos && appt.photos.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-xs text-gray-400 mb-2">תמונות ({appt.photos.length})</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {appt.photos.map(photo => (
+                            <a key={photo.id} href={photo.url} target="_blank" rel="noopener noreferrer">
+                              <img src={photo.url} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

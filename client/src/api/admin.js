@@ -2,7 +2,7 @@ import api from './axios';
 export const getWorkers = () => api.get('/admin/workers').then(r => r.data);
 export const createWorker = (data) => api.post('/admin/workers', data).then(r => r.data);
 export const updateWorker = (id, data) => api.put(`/admin/workers/${id}`, data).then(r => r.data);
-export const deleteWorker = (id) => api.delete(`/admin/workers/${id}`).then(r => r.data);
+export const deleteWorker = (id, password) => api.delete(`/admin/workers/${id}`, { data: { password } }).then(r => r.data);
 export const getWorkerAvailability = (id) => api.get(`/admin/workers/${id}/availability`).then(r => r.data);
 export const getServices = () => api.get('/admin/services').then(r => r.data);
 export const createService = (data) => api.post('/admin/services', data).then(r => r.data);
@@ -45,3 +45,10 @@ export const uploadImage = (file) => {
   form.append('image', file);
   return api.post('/admin/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
 };
+export const getAppointmentPhotos = (id) => api.get(`/admin/appointments/${id}/photos`).then(r => r.data);
+export const addAppointmentPhoto = (apptId, file) => {
+  const form = new FormData();
+  form.append('image', file);
+  return api.post(`/admin/appointments/${apptId}/photos`, form, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
+};
+export const deleteAppointmentPhoto = (apptId, photoId) => api.delete(`/admin/appointments/${apptId}/photos/${photoId}`).then(r => r.data);

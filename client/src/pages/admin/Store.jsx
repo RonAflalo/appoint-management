@@ -168,7 +168,7 @@ export default function AdminStore() {
           {products.map(p => (
             <div key={p.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               {p.image_url && (
-                <img src={p.image_url} alt={p.name} className="w-full h-40 object-cover" />
+                <img src={p.image_url} alt={p.name} className="w-full h-24 object-cover" />
               )}
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
