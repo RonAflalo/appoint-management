@@ -28,6 +28,9 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Temporary diagnostic log
+app.use((req, res, next) => { console.log('REQUEST:', req.method, req.path); next(); });
+
 // Rate limiting (skipped in test environment)
 if (process.env.NODE_ENV !== 'test') {
   const rateLimit = require('express-rate-limit');
