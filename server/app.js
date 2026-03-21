@@ -10,6 +10,7 @@ const workerRoutes = require('./routes/worker');
 const userRoutes = require('./routes/user');
 const tenantRoutes = require('./routes/tenant');
 const publicRoutes = require('./routes/public');
+const seedRoutes = require('./routes/seed');
 
 const fs = require('fs');
 
@@ -58,6 +59,7 @@ app.use('/api/worker', workerRoutes);
 app.use('/api', userRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api', tenantRoutes);
+app.use('/api', seedRoutes);
 
 // Serve React in production
 if (process.env.NODE_ENV === 'production') {
