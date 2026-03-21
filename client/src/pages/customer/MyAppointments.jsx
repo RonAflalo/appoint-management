@@ -104,22 +104,26 @@ export default function CustomerMyAppointments() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">התורים שלי</h1>
-        <p className="text-gray-500 text-sm mt-1">{appointments.length} תורים סה"כ</p>
+        <h1 className="font-headline font-extrabold text-3xl text-on-surface">התורים שלי</h1>
+        <p className="text-on-surface-variant text-sm mt-1">{appointments.length} תורים סה"כ</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+      <div className="flex bg-surface-container rounded-xl p-1 mb-6">
         {TABS.map(tab => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors
-              ${activeTab === tab.value ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600'}`}
+              ${activeTab === tab.value
+                ? 'bg-surface-container-lowest text-primary shadow-sm'
+                : 'text-on-surface-variant'}`}
           >
             {tab.label}
             <span className={`me-2 text-xs px-1.5 py-0.5 rounded-full
-              ${activeTab === tab.value ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
+              ${activeTab === tab.value
+                ? 'bg-primary/10 text-primary'
+                : 'bg-surface-container-low text-on-surface-variant'}`}>
               {tabCount(tab.value)}
             </span>
           </button>
@@ -130,21 +134,21 @@ export default function CustomerMyAppointments() {
       {activeTab === 'waitlist' && !loading && (
         <div>
           {waitlist.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+            <div className="bg-surface-container-lowest rounded-2xl p-12 text-center">
               <span className="text-5xl mb-4 block">⏳</span>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">אינך ברשימת המתנה</h3>
-              <p className="text-gray-500 text-sm">כשתגיע לשעה תפוסה תוכל להצטרף לרשימת ההמתנה</p>
+              <h3 className="text-lg font-medium text-on-surface mb-2">אינך ברשימת המתנה</h3>
+              <p className="text-on-surface-variant text-sm">כשתגיע לשעה תפוסה תוכל להצטרף לרשימת ההמתנה</p>
             </div>
           ) : (
             <div className="space-y-4">
               {waitlist.map(entry => (
-                <div key={entry.id} className="bg-white rounded-xl shadow-sm border border-amber-100 p-5">
+                <div key={entry.id} className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-lg">{entry.service_name}</h3>
-                      <p className="text-gray-500 text-sm">{entry.business_name}</p>
+                      <h3 className="font-semibold text-on-surface text-lg">{entry.service_name}</h3>
+                      <p className="text-on-surface-variant text-sm">{entry.business_name}</p>
                       {entry.worker_name && (
-                        <p className="text-gray-500 text-sm">עם {entry.worker_name}</p>
+                        <p className="text-on-surface-variant text-sm">עם {entry.worker_name}</p>
                       )}
                     </div>
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full
@@ -154,7 +158,7 @@ export default function CustomerMyAppointments() {
                       {entry.status === 'notified' ? 'ממתין לאישורך' : 'בהמתנה'}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 mb-4">
+                  <div className="text-sm text-on-surface-variant mb-4">
                     <span>📅 </span>
                     {new Date(entry.slot_time).toLocaleString('he-IL', {
                       weekday: 'long', day: 'numeric', month: 'long',
@@ -194,55 +198,55 @@ export default function CustomerMyAppointments() {
       {activeTab !== 'waitlist' && loading ? (
         <LoadingSpinner />
       ) : activeTab !== 'waitlist' && !loading && displayedAppointments.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+        <div className="bg-surface-container-lowest rounded-2xl p-12 text-center">
           <span className="text-5xl mb-4 block">{activeTab === 'upcoming' ? '📅' : '📋'}</span>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-on-surface mb-2">
             {activeTab === 'upcoming' ? 'אין תורים קרובים' : 'אין תורים בעבר'}
           </h3>
-          <p className="text-gray-500 text-sm">
+          <p className="text-on-surface-variant text-sm">
             {activeTab === 'upcoming' ? 'קבע תור חדש עכשיו!' : 'ההיסטוריה שלך תופיע כאן'}
           </p>
         </div>
       ) : activeTab !== 'waitlist' ? (
         <div className="space-y-4">
           {displayedAppointments.map(appt => (
-            <div key={appt.id} className={`bg-white rounded-xl shadow-sm border p-5 transition-colors
-              ${appt.status === 'reschedule_requested' ? 'border-orange-200' : 'border-gray-100'}`}>
+            <div key={appt.id} className={`bg-surface-container-lowest rounded-2xl shadow-sm p-5 transition-colors
+              ${appt.status === 'reschedule_requested' ? 'border border-orange-200' : 'border-none'}`}>
 
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-lg">{appt.service_name}</h3>
-                  <p className="text-gray-500 text-sm">עם {appt.worker_name}</p>
+                  <h3 className="font-semibold text-on-surface text-lg">{appt.service_name}</h3>
+                  <p className="text-on-surface-variant text-sm">עם {appt.worker_name}</p>
                 </div>
                 <StatusBadge status={appt.status} />
               </div>
 
               {/* Details */}
               <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-on-surface-variant">
                   <span>📅</span>
                   <span>{formatDateTime(appt.start_time)}</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-on-surface-variant">
                   <span>⏱️</span>
                   <span>{appt.duration_minutes} דקות</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-on-surface-variant">
                   <span>💰</span>
                   <span>₪{appt.price}</span>
                 </div>
               </div>
 
               {appt.notes && (
-                <div className="mb-3 text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
+                <div className="mb-3 text-xs text-on-surface-variant bg-surface-container-low rounded-lg p-2">
                   הערה: {appt.notes}
                 </div>
               )}
 
               {/* Reschedule request banner */}
               {appt.status === 'reschedule_requested' && appt.suggested_time && (
-                <div className="mb-4 bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <div className="mb-4 bg-orange-50 border border-orange-200 rounded-2xl p-4">
                   <div className="font-semibold text-orange-800 mb-1">🔄 העובד מבקש לשנות את המועד</div>
                   <div className="text-sm text-orange-700 mb-1">
                     <span className="font-medium">מועד מוצע:</span> {formatDateTime(appt.suggested_time)}
@@ -264,7 +268,7 @@ export default function CustomerMyAppointments() {
                       <button
                         onClick={() => handleCancel(appt.id)}
                         disabled={busy === appt.id}
-                        className="flex-1 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+                        className="flex-1 py-2 bg-surface-container-lowest border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
                       >
                         ✕ בטל תור
                       </button>
@@ -276,7 +280,7 @@ export default function CustomerMyAppointments() {
               {/* Regular cancel button for non-reschedule statuses */}
               {canCancel(appt) && appt.status !== 'reschedule_requested' && (
                 isCancelBlocked(appt) ? (
-                  <div className="w-full py-2.5 bg-gray-50 border border-gray-200 text-gray-400 rounded-xl text-sm text-center">
+                  <div className="w-full py-2.5 bg-surface-container border border-outline-variant/20 text-on-surface-variant/40 rounded-xl text-sm text-center">
                     ביטול אינו אפשרי (פחות מ-{cancellationHours} שעות לפני התור)
                   </div>
                 ) : (

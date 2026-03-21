@@ -5,6 +5,7 @@ const {
   sendRescheduleRequest,
 } = require('../services/emailService');
 const { formatDateTime } = require('../utils/dateFormat');
+const { createNotification, notifyAdminAndWorker } = require('../services/notificationService');
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,9 @@ const cancelAppointment = async (req, res) => {
     dateTime: formatDateTime(appt.start_time),
     cancelledBy: 'worker',
   });
+
+  // Notify admin only (worker cancelled)
+  createNotification(req.user.business_id, 'worker_cancelled', `${req.user.name} ביטל תור של ${appt.customer_name} - ${appt.service_name}`, '/admin/appointments', null);
 
   res.json({ success: true, message: 'התור בוטל' });
 };
@@ -251,6 +255,31 @@ const deleteAppointmentPhoto = (req, res) => {
   res.json({ success: true });
 };
 
+function getWorkerNotifications(req, res) {
+  try {
+    const db = getDb();
+    const notifications = db.prepare(
+      'SELECT * FROM notifications WHERE worker_id = ? ORDER BY created_at DESC LIMIT 50'
+    ).all(req.user.id);
+    const unseen = db.prepare(
+      'SELECT COUNT(*) as count FROM notifications WHERE worker_id = ? AND seen = 0'
+    ).get(req.user.id);
+    res.json({ notifications, unseenCount: unseen.count });
+  } catch (e) {
+    res.status(500).json({ message: 'שגיאה בטעינת התראות' });
+  }
+}
+
+function markWorkerNotificationsSeen(req, res) {
+  try {
+    const db = getDb();
+    db.prepare('UPDATE notifications SET seen = 1 WHERE worker_id = ?').run(req.user.id);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: 'שגיאה' });
+  }
+}
+
 module.exports = {
   getAppointments,
   approveAppointment,
@@ -262,4 +291,6 @@ module.exports = {
   getAppointmentPhotos,
   addAppointmentPhoto,
   deleteAppointmentPhoto,
+  getWorkerNotifications,
+  markWorkerNotificationsSeen,
 };

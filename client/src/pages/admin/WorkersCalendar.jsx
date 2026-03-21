@@ -85,21 +85,21 @@ export default function AdminWorkersCalendar() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">לוח עובדים</h1>
-          <p className="text-gray-500 text-sm mt-1">סקירת זמינות וסטטוס כלל העובדים לפי יום</p>
+          <h1 className="font-headline font-extrabold text-3xl text-on-surface">לוח עובדים</h1>
+          <p className="text-on-surface-variant text-sm mt-1">סקירת זמינות וסטטוס כלל העובדים לפי יום</p>
         </div>
         {/* Month navigation */}
-        <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-          <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded-lg transition-colors text-gray-600">
+        <div className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant/30 rounded-2xl px-4 py-2 shadow-sm">
+          <button onClick={prevMonth} className="p-1 hover:bg-surface-container-low rounded-lg transition-colors text-on-surface-variant">
             {/* Right arrow (RTL: goes to prev month) */}
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-          <span className="font-semibold text-gray-900 min-w-32 text-center">
+          <span className="font-semibold text-on-surface min-w-32 text-center">
             {MONTHS_HE[month - 1]} {year}
           </span>
-          <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded-lg transition-colors text-gray-600">
+          <button onClick={nextMonth} className="p-1 hover:bg-surface-container-low rounded-lg transition-colors text-on-surface-variant">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -112,7 +112,7 @@ export default function AdminWorkersCalendar() {
         {Object.entries(STATUS_STYLE).map(([key, s]) => (
           <div key={key} className="flex items-center gap-1.5">
             <span className={`inline-block w-2.5 h-2.5 rounded-full ${s.dot}`}></span>
-            <span className="text-gray-600">{s.label}</span>
+            <span className="text-on-surface-variant">{s.label}</span>
           </div>
         ))}
       </div>
@@ -123,11 +123,11 @@ export default function AdminWorkersCalendar() {
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/20 overflow-hidden">
               {/* Day-of-week header */}
-              <div className="grid grid-cols-7 border-b border-gray-100">
+              <div className="grid grid-cols-7 border-b border-outline-variant/20">
                 {DAYS_HE_SHORT.map(d => (
-                  <div key={d} className="py-2 text-center text-xs font-semibold text-gray-500 bg-gray-50">
+                  <div key={d} className="py-2 text-center text-xs font-semibold text-on-surface-variant bg-surface-container">
                     {d}
                   </div>
                 ))}
@@ -137,7 +137,7 @@ export default function AdminWorkersCalendar() {
               <div className="grid grid-cols-7">
                 {cells.map((day, idx) => {
                   if (!day) return (
-                    <div key={`empty-${idx}`} className="min-h-20 border-b border-s border-gray-100 bg-gray-50/50" />
+                    <div key={`empty-${idx}`} className="min-h-20 border-b border-s border-outline-variant/20 bg-surface-container-low/50" />
                   );
 
                   const ds = dateStr(day);
@@ -149,13 +149,13 @@ export default function AdminWorkersCalendar() {
                     <div
                       key={ds}
                       onClick={() => handleDayClick(ds)}
-                      className={`min-h-20 border-b border-s border-gray-100 p-1.5 cursor-pointer transition-colors
-                        ${isSelected ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-400' : 'hover:bg-gray-50'}
-                        ${!dayData?.isBusinessOpen ? 'bg-gray-50/70' : ''}`}
+                      className={`min-h-20 border-b border-s border-outline-variant/20 p-1.5 cursor-pointer transition-colors
+                        ${isSelected ? 'bg-primary/10 ring-2 ring-inset ring-primary' : 'hover:bg-surface-container-low'}
+                        ${!dayData?.isBusinessOpen ? 'bg-surface-container-low/50' : ''}`}
                     >
                       {/* Day number */}
                       <div className={`text-xs font-bold mb-1 w-6 h-6 flex items-center justify-center rounded-full
-                        ${isToday ? 'bg-indigo-600 text-white' : 'text-gray-700'}`}>
+                        ${isToday ? 'bg-primary text-white' : 'text-on-surface'}`}>
                         {day}
                       </div>
 
@@ -182,7 +182,7 @@ export default function AdminWorkersCalendar() {
 
                       {/* Business closed label */}
                       {dayData && !dayData.isBusinessOpen && (
-                        <div className="text-xs text-gray-400 mt-1">סגור</div>
+                        <div className="text-xs text-on-surface-variant mt-1">סגור</div>
                       )}
                     </div>
                   );
@@ -194,23 +194,25 @@ export default function AdminWorkersCalendar() {
 
         {/* Day detail side panel */}
         {selectedDate && (
-          <div className="w-80 shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="w-80 shrink-0 bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/20 overflow-hidden">
             {/* Panel header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-indigo-600 text-white">
+            <div className="flex items-center justify-between px-4 py-3 primary-gradient text-white">
               <h3 className="font-semibold text-sm">
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('he-IL', {
                   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                 })}
               </h3>
               <button onClick={() => { setSelectedDate(null); setDayDetail(null); }}
-                className="text-indigo-200 hover:text-white text-lg leading-none">✕</button>
+                className="text-white/70 hover:text-white leading-none flex items-center justify-center">
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+              </button>
             </div>
 
             <div className="p-4 max-h-[70vh] overflow-y-auto">
               {loadingDetail ? (
                 <LoadingSpinner size="sm" />
               ) : !dayDetail ? null : !dayDetail.isBusinessOpen ? (
-                <div className="text-center py-6 text-gray-400">
+                <div className="text-center py-6 text-on-surface-variant">
                   <span className="text-3xl block mb-2">🔒</span>
                   <p className="text-sm font-medium">העסק סגור ביום זה</p>
                 </div>
@@ -243,11 +245,11 @@ export default function AdminWorkersCalendar() {
                           <div className="border-t border-opacity-50 border-current">
                             {worker.appointments.map(appt => (
                               <div key={appt.id}
-                                className="flex items-start justify-between px-3 py-2 border-t border-gray-100 bg-white/60 text-xs gap-2">
+                                className="flex items-start justify-between px-3 py-2 border-t border-outline-variant/20 bg-surface-container-lowest/60 text-xs gap-2">
                                 <div className="min-w-0">
-                                  <div className="font-medium text-gray-900 truncate">{appt.customer_name}</div>
-                                  <div className="text-gray-500 truncate">{appt.service_name}</div>
-                                  <div className="text-gray-500">
+                                  <div className="font-medium text-on-surface truncate">{appt.customer_name}</div>
+                                  <div className="text-on-surface-variant truncate">{appt.service_name}</div>
+                                  <div className="text-on-surface-variant">
                                     {formatTime(appt.start_time)}–{formatTime(appt.end_time)}
                                   </div>
                                 </div>
@@ -262,7 +264,7 @@ export default function AdminWorkersCalendar() {
                         {/* No appointments */}
                         {(worker.status === 'available' || worker.status === 'custom_hours')
                           && worker.appointments.length === 0 && (
-                          <div className="px-3 pb-2.5 text-xs text-gray-400 bg-white/60">אין תורים</div>
+                          <div className="px-3 pb-2.5 text-xs text-on-surface-variant bg-surface-container-lowest/60">אין תורים</div>
                         )}
                       </div>
                     );

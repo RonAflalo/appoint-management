@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { getDb } = require('../db/database');
 const { sendWaitlistAvailable } = require('../services/emailService');
+const { notifyAdminAndWorker } = require('../services/notificationService');
 
 // Normalize to the same format stored in appointments ("YYYY-MM-DD HH:MM:SS")
 function normalizeSlotTime(t) {
@@ -45,6 +46,8 @@ async function notifyNextInQueue({ businessId, serviceId, slotTime, workerId }) 
     slotTime: normalizedSlot,
     confirmUrl: `${clientUrl}/waitlist/confirm/${token}`,
   });
+
+  notifyAdminAndWorker(businessId, workerId || null, 'waitlist_opened', `מקום פנוי ברשימת המתנה, ${next.customer_name} קיבל התראה - ${service?.name || ''}`);
 }
 
 async function expireAndAdvance() {

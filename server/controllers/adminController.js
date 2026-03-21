@@ -3,6 +3,7 @@ const { getDb } = require('../db/database');
 const { sendAppointmentConfirmed, sendAppointmentCancelled, sendRescheduleRequest } = require('../services/emailService');
 const { formatDateTime } = require('../utils/dateFormat');
 const { notifyNextInQueue } = require('../utils/waitlist');
+const { createNotification, notifyAdminAndWorker } = require('../services/notificationService');
 
 // ---- Workers ----
 
@@ -220,7 +221,7 @@ const updateAppointmentStatus = (req, res) => {
   const appt = db.prepare(`
     SELECT a.id, a.start_time, a.end_time, a.status AS old_status,
            c.name AS customer_name, c.email AS customer_email,
-           w.name AS worker_name, s.name AS service_name
+           w.id AS worker_id, w.name AS worker_name, s.name AS service_name
     FROM appointments a
     JOIN users c ON a.customer_id = c.id
     JOIN users w ON a.worker_id = w.id
@@ -244,6 +245,12 @@ const updateAppointmentStatus = (req, res) => {
   }
 
   db.prepare('UPDATE appointments SET status = ? WHERE id = ?').run(status, id);
+
+  if (status === 'cancelled' && appt.old_status === 'confirmed') {
+    notifyAdminAndWorker(req.user.business_id, appt.worker_id, 'appointment_cancelled', `תור מאושר של ${appt.customer_name} בוטל`);
+  } else if (status === 'cancelled') {
+    createNotification(req.user.business_id, 'appointment_cancelled', `תור של ${appt.customer_name} בוטל`, '/admin/appointments');
+  }
 
   const emailData = {
     customerEmail: appt.customer_email,
@@ -924,6 +931,31 @@ const disconnectCalendar = (req, res) => {
   res.json({ success: true });
 };
 
+function getNotifications(req, res) {
+  try {
+    const db = getDb();
+    const notifications = db.prepare(
+      'SELECT * FROM notifications WHERE business_id = ? AND worker_id IS NULL ORDER BY created_at DESC LIMIT 50'
+    ).all(req.user.business_id);
+    const unseen = db.prepare(
+      'SELECT COUNT(*) as count FROM notifications WHERE business_id = ? AND worker_id IS NULL AND seen = 0'
+    ).get(req.user.business_id);
+    res.json({ notifications, unseenCount: unseen.count });
+  } catch (e) {
+    res.status(500).json({ message: 'שגיאה בטעינת התראות' });
+  }
+}
+
+function markNotificationsSeen(req, res) {
+  try {
+    const db = getDb();
+    db.prepare('UPDATE notifications SET seen = 1 WHERE business_id = ? AND worker_id IS NULL').run(req.user.business_id);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: 'שגיאה' });
+  }
+}
+
 module.exports = {
   getWorkers, createWorker, updateWorker, deleteWorker,
   toggleAdminAsWorker,
@@ -942,4 +974,5 @@ module.exports = {
   getRecurringRules, createRecurringRule, updateRecurringRule, deleteRecurringRule,
   getCalendarStatus, disconnectCalendar,
   getAppointmentPhotos, addAppointmentPhoto, deleteAppointmentPhoto,
+  getNotifications, markNotificationsSeen,
 };

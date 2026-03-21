@@ -97,13 +97,13 @@ export default function WorkerAvailability() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">זמינות</h1>
-        <p className="text-gray-500 text-sm mt-1">הגדר ימים חסומים או שעות מותאמות</p>
+        <h1 className="font-headline font-extrabold text-3xl text-on-surface">זמינות</h1>
+        <p className="text-on-surface-variant text-sm mt-1">הגדר ימים חסומים או שעות מותאמות</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Calendar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5">
           <style>{`
             .blocked-day {
               background: #fee2e2 !important;
@@ -137,7 +137,7 @@ export default function WorkerAvailability() {
             locale="he-IL"
             minDate={new Date()}
           />
-          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+          <div className="mt-3 flex items-center gap-4 text-xs text-on-surface-variant flex-wrap">
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 bg-red-100 rounded"></div>
               <span>חסום</span>
@@ -155,8 +155,8 @@ export default function WorkerAvailability() {
 
         {/* Form */}
         <div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-            <h2 className="text-base font-semibold text-gray-900 mb-4">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5 mb-4">
+            <h2 className="text-base font-semibold text-on-surface mb-4">
               {selectedDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
               {selectedOverride && (
                 <span className={`mr-2 text-xs px-2 py-0.5 rounded-full
@@ -179,58 +179,58 @@ export default function WorkerAvailability() {
                     onChange={e => setForm(p => ({ ...p, is_blocked: e.target.checked, custom_start: '', custom_end: '' }))}
                     className="sr-only peer"
                   />
-                  <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                  <div className="w-10 h-6 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-error"></div>
                 </div>
-                <span className="text-sm font-medium text-gray-700">חסום יום זה</span>
+                <span className="text-sm font-medium text-on-surface-variant">חסום יום זה</span>
               </label>
 
               {!form.is_blocked && (
                 <>
                   <div className="space-y-3">
-                    <p className="text-xs text-gray-500">שינוי שעות עבודה ביום זה (השאר ריק לשעות ברירת מחדל)</p>
+                    <p className="text-xs text-on-surface-variant">שינוי שעות עבודה ביום זה (השאר ריק לשעות ברירת מחדל)</p>
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">שעת התחלה</label>
+                        <label className="block text-xs font-medium text-on-surface-variant mb-1">שעת התחלה</label>
                         <input
                           type="time"
                           value={form.custom_start}
                           onChange={e => setForm(p => ({ ...p, custom_start: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                         />
                       </div>
-                      <span className="text-gray-400 mt-5">-</span>
+                      <span className="text-on-surface-variant mt-5">-</span>
                       <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">שעת סיום</label>
+                        <label className="block text-xs font-medium text-on-surface-variant mb-1">שעת סיום</label>
                         <input
                           type="time"
                           value={form.custom_end}
                           onChange={e => setForm(p => ({ ...p, custom_end: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-100 pt-3 space-y-3">
+                  <div className="border-t border-outline-variant/20 pt-3 space-y-3">
                     <p className="text-xs font-medium text-amber-700">חסימת טווח שעות (למשל: הפסקת צהריים)</p>
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">מ-</label>
+                        <label className="block text-xs font-medium text-on-surface-variant mb-1">מ-</label>
                         <input
                           type="time"
                           value={form.block_start}
                           onChange={e => setForm(p => ({ ...p, block_start: e.target.value }))}
-                          className="w-full px-3 py-2 border border-amber-200 bg-amber-50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          className="w-full px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                         />
                       </div>
-                      <span className="text-gray-400 mt-5">-</span>
+                      <span className="text-on-surface-variant mt-5">-</span>
                       <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">עד-</label>
+                        <label className="block text-xs font-medium text-on-surface-variant mb-1">עד-</label>
                         <input
                           type="time"
                           value={form.block_end}
                           onChange={e => setForm(p => ({ ...p, block_end: e.target.value }))}
-                          className="w-full px-3 py-2 border border-amber-200 bg-amber-50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          className="w-full px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                         />
                       </div>
                     </div>
@@ -245,7 +245,7 @@ export default function WorkerAvailability() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              className="mt-4 w-full py-2.5 primary-gradient disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-opacity flex items-center justify-center gap-2"
             >
               {saving ? (
                 <>
@@ -258,13 +258,13 @@ export default function WorkerAvailability() {
 
           {/* Override list */}
           {overrides.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">הגדרות קיימות</h3>
+            <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-4">
+              <h3 className="text-sm font-semibold text-on-surface mb-3">הגדרות קיימות</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {overrides.map(override => (
-                  <div key={override.id} className={`flex items-center justify-between p-2 rounded-lg text-xs
+                  <div key={override.id} className={`flex items-center justify-between p-2 rounded-xl text-xs
                     ${override.is_blocked ? 'bg-red-50' : override.block_start ? 'bg-yellow-50' : 'bg-green-50'}`}>
-                    <span className="font-medium text-gray-700">{formatDate(override.date)}</span>
+                    <span className="font-medium text-on-surface">{formatDate(override.date)}</span>
                     <span className={override.is_blocked ? 'text-red-600' : override.block_start ? 'text-amber-600' : 'text-green-600'}>
                       {override.is_blocked
                         ? 'חסום'

@@ -50,17 +50,17 @@ export default function WorkerSchedule() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">לוח זמנים</h1>
-        <p className="text-gray-500 text-sm mt-1">בחר תאריך לצפייה בתורים</p>
+        <h1 className="font-headline font-extrabold text-3xl text-on-surface">לוח זמנים</h1>
+        <p className="text-on-surface-variant text-sm mt-1">בחר תאריך לצפייה בתורים</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Calendar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5">
           <style>{`
             .has-appointments {
-              background: #e0e7ff !important;
-              color: #4338ca !important;
+              background: #ede9fe !important;
+              color: #5b21b6 !important;
               font-weight: 600;
               border-radius: 6px;
             }
@@ -87,7 +87,7 @@ export default function WorkerSchedule() {
             tileClassName={tileClassName}
             locale="he-IL"
           />
-          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+          <div className="mt-3 flex items-center gap-4 text-xs text-on-surface-variant flex-wrap">
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 bg-indigo-100 rounded"></div>
               <span>יש תורים</span>
@@ -101,33 +101,33 @@ export default function WorkerSchedule() {
 
         {/* Day appointments */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-base font-semibold text-on-surface mb-4">
             תורים ל-{selectedDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
           </h2>
 
           {dayAppointments.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-8 text-center">
-              <span className="text-4xl mb-3 block">📅</span>
-              <p className="text-gray-500">אין תורים ביום זה</p>
+            <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-8 text-center">
+              <span className="material-symbols-outlined text-4xl text-on-surface-variant/30 mb-3 block">event</span>
+              <p className="text-on-surface-variant">אין תורים ביום זה</p>
             </div>
           ) : (
             <div className="space-y-3">
               {dayAppointments
                 .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
                 .map(appt => (
-                  <div key={appt.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                  <div key={appt.id} className="bg-surface-container-lowest rounded-2xl shadow-sm p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="font-semibold text-gray-900">{appt.customer_name}</div>
-                        <div className="text-sm text-gray-500 mt-0.5">{appt.service_name}</div>
-                        <div className="text-sm text-emerald-600 font-medium mt-1">
+                        <div className="font-semibold text-on-surface">{appt.customer_name}</div>
+                        <div className="text-sm text-on-surface-variant mt-0.5">{appt.service_name}</div>
+                        <div className="text-sm text-secondary font-medium mt-1">
                           {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
                         </div>
                       </div>
                       <StatusBadge status={appt.status} />
                     </div>
                     {appt.notes && (
-                      <div className="mt-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
+                      <div className="mt-2 text-xs text-on-surface-variant bg-surface-container-low rounded-xl p-2">
                         {appt.notes}
                       </div>
                     )}

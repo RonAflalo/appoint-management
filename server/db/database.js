@@ -223,6 +223,24 @@ function initializeDatabase(overridePath) {
     `);
   } catch (_) {}
 
+  // Migrate: notifications
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        business_id INTEGER NOT NULL REFERENCES businesses(id),
+        type TEXT NOT NULL,
+        message TEXT NOT NULL,
+        link TEXT,
+        seen INTEGER NOT NULL DEFAULT 0,
+        worker_id INTEGER REFERENCES users(id),
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  } catch (_) {}
+  // Migrate: add worker_id to existing notifications table
+  try { db.exec(`ALTER TABLE notifications ADD COLUMN worker_id INTEGER REFERENCES users(id)`); } catch (_) {}
+
   console.log('Database initialized');
   return db;
 }

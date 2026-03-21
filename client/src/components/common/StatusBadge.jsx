@@ -1,15 +1,16 @@
 const STATUS_CONFIG = {
-  pending: { label: 'ממתין', className: 'bg-yellow-100 text-yellow-800' },
-  confirmed: { label: 'מאושר', className: 'bg-green-100 text-green-800' },
-  completed: { label: 'הושלם', className: 'bg-blue-100 text-blue-800' },
-  cancelled: { label: 'בוטל', className: 'bg-red-100 text-red-800' },
-  reschedule_requested: { label: 'שינוי מועד', className: 'bg-orange-100 text-orange-800' },
+  pending:              { label: 'ממתין',      dot: 'bg-amber-500',   pill: 'bg-amber-50 text-amber-700' },
+  confirmed:            { label: 'מאושר',      dot: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-700' },
+  completed:            { label: 'הושלם',      dot: 'bg-blue-500',    pill: 'bg-blue-50 text-blue-700' },
+  cancelled:            { label: 'בוטל',       dot: 'bg-red-500',     pill: 'bg-red-50 text-red-600' },
+  reschedule_requested: { label: 'שינוי מועד', dot: 'bg-indigo-500',  pill: 'bg-indigo-50 text-indigo-700' },
 };
 
 export default function StatusBadge({ status }) {
-  const config = STATUS_CONFIG[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
+  const config = STATUS_CONFIG[status] || { label: status, dot: 'bg-gray-400', pill: 'bg-gray-50 text-gray-600' };
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${config.pill}`}>
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${config.dot}`} />
       {config.label}
     </span>
   );

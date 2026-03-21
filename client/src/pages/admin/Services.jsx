@@ -138,16 +138,16 @@ export default function AdminServices() {
   }
 
   const ServiceCard = ({ service }) => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+    <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xl">✂️</div>
+        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-xl">✂️</div>
         <div className="flex gap-1">
-          <button onClick={() => openEditService(service)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">✏️</button>
-          <button onClick={() => handleDeleteService(service)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">🗑️</button>
+          <button onClick={() => openEditService(service)} className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">✏️</button>
+          <button onClick={() => handleDeleteService(service)} className="p-1.5 text-on-surface-variant hover:text-error hover:bg-red-50 rounded-lg transition-colors">🗑️</button>
         </div>
       </div>
-      <h3 className="font-semibold text-gray-900 text-lg mb-2">{service.name}</h3>
-      <div className="flex items-center gap-4 text-sm text-gray-500">
+      <h3 className="font-semibold text-on-surface text-lg mb-2">{service.name}</h3>
+      <div className="flex items-center gap-4 text-sm text-on-surface-variant">
         <span>⏱️ {service.duration_minutes} דקות</span>
         <span>💰 ₪{service.price}</span>
       </div>
@@ -159,37 +159,37 @@ export default function AdminServices() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">שירותים</h1>
-          <p className="text-gray-500 text-sm mt-1">{services.length} שירותים פעילים</p>
+          <h1 className="font-headline font-extrabold text-3xl text-on-surface">שירותים</h1>
+          <p className="text-on-surface-variant text-sm mt-1">{services.length} שירותים פעילים</p>
         </div>
         <button
           onClick={openAddService}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 primary-gradient text-white rounded-xl px-4 py-2.5 font-bold text-sm transition-opacity hover:opacity-90"
         >
           <span>+</span>הוסף שירות
         </button>
       </div>
 
       {/* Categories management */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-900">קטגוריות</h2>
+          <h2 className="text-base font-semibold text-on-surface">קטגוריות</h2>
           <button
             onClick={openAddCategory}
-            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+            className="text-sm text-primary hover:opacity-80 font-medium transition-opacity"
           >
             + הוסף קטגוריה
           </button>
         </div>
         {categories.length === 0 ? (
-          <p className="text-sm text-gray-400">אין קטגוריות עדיין</p>
+          <p className="text-sm text-on-surface-variant">אין קטגוריות עדיין</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {categories.map(cat => (
-              <div key={cat.id} className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1.5">
-                <span className="text-sm font-medium text-indigo-800">{cat.name}</span>
-                <button onClick={() => openEditCategory(cat)} className="text-indigo-400 hover:text-indigo-600 text-xs">✏️</button>
-                <button onClick={() => handleDeleteCategory(cat)} className="text-indigo-300 hover:text-red-500 text-xs">✕</button>
+              <div key={cat.id} className="flex items-center gap-1.5 bg-primary/10 rounded-full px-3 py-1.5">
+                <span className="text-sm font-semibold text-primary">{cat.name}</span>
+                <button onClick={() => openEditCategory(cat)} className="text-primary/60 hover:text-primary text-xs transition-colors">✏️</button>
+                <button onClick={() => handleDeleteCategory(cat)} className="text-primary/40 hover:text-error text-xs transition-colors">✕</button>
               </div>
             ))}
           </div>
@@ -198,18 +198,18 @@ export default function AdminServices() {
 
       {/* Services grouped */}
       {services.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-12 text-center">
           <span className="text-5xl mb-4 block">✂️</span>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">אין שירותים</h3>
-          <p className="text-gray-500 text-sm mb-4">הוסף שירות ראשון</p>
-          <button onClick={openAddService} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">הוסף שירות</button>
+          <h3 className="text-lg font-medium text-on-surface mb-2">אין שירותים</h3>
+          <p className="text-on-surface-variant text-sm mb-4">הוסף שירות ראשון</p>
+          <button onClick={openAddService} className="px-4 py-2.5 primary-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">הוסף שירות</button>
         </div>
       ) : (
         <div className="space-y-6">
           {/* Categorized groups */}
           {Object.values(grouped).map(group => (
             <div key={group.name}>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{group.name}</h3>
+              <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wide mb-3">{group.name}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {group.services.map(s => <ServiceCard key={s.id} service={s} />)}
               </div>
@@ -219,7 +219,7 @@ export default function AdminServices() {
           {uncategorized.length > 0 && (
             <div>
               {Object.keys(grouped).length > 0 && (
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">ללא קטגוריה</h3>
+                <h3 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wide mb-3">ללא קטגוריה</h3>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {uncategorized.map(s => <ServiceCard key={s.id} service={s} />)}
@@ -237,21 +237,21 @@ export default function AdminServices() {
       >
         <form onSubmit={handleServiceSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">שם השירות</label>
+            <label className="block text-sm font-medium text-on-surface mb-1">שם השירות</label>
             <input
               type="text"
               value={serviceForm.name}
               onChange={e => setServiceForm(p => ({ ...p, name: e.target.value }))}
               placeholder="לדוגמה: תספורת"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">קטגוריה (אופציונלי)</label>
+            <label className="block text-sm font-medium text-on-surface mb-1">קטגוריה (אופציונלי)</label>
             <select
               value={serviceForm.category_id}
               onChange={e => setServiceForm(p => ({ ...p, category_id: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
             >
               <option value="">ללא קטגוריה</option>
               {categories.map(cat => (
@@ -260,32 +260,32 @@ export default function AdminServices() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">משך בדקות</label>
+            <label className="block text-sm font-medium text-on-surface mb-1">משך בדקות</label>
             <input
               type="number"
               min="5"
               max="480"
               value={serviceForm.duration_minutes}
               onChange={e => setServiceForm(p => ({ ...p, duration_minutes: parseInt(e.target.value) || 30 }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">מחיר (₪)</label>
+            <label className="block text-sm font-medium text-on-surface mb-1">מחיר (₪)</label>
             <input
               type="number"
               min="0"
               step="0.5"
               value={serviceForm.price}
               onChange={e => setServiceForm(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={submitting} className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg text-sm font-medium">
+            <button type="submit" disabled={submitting} className="flex-1 py-2 primary-gradient disabled:opacity-50 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
               {submitting ? 'שומר...' : editingService ? 'שמור שינויים' : 'הוסף שירות'}
             </button>
-            <button type="button" onClick={() => setShowServiceModal(false)} className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">
+            <button type="button" onClick={() => setShowServiceModal(false)} className="flex-1 py-2 bg-surface-container text-on-surface rounded-xl text-sm font-medium hover:bg-surface-container-high transition-colors">
               ביטול
             </button>
           </div>
@@ -300,21 +300,21 @@ export default function AdminServices() {
       >
         <form onSubmit={handleCategorySubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">שם הקטגוריה</label>
+            <label className="block text-sm font-medium text-on-surface mb-1">שם הקטגוריה</label>
             <input
               type="text"
               value={categoryName}
               onChange={e => setCategoryName(e.target.value)}
               placeholder="לדוגמה: שיער"
               autoFocus
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={submitting || !categoryName.trim()} className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg text-sm font-medium">
+            <button type="submit" disabled={submitting || !categoryName.trim()} className="flex-1 py-2 primary-gradient disabled:opacity-50 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">
               {submitting ? 'שומר...' : editingCategory ? 'שמור' : 'הוסף'}
             </button>
-            <button type="button" onClick={() => setShowCategoryModal(false)} className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">
+            <button type="button" onClick={() => setShowCategoryModal(false)} className="flex-1 py-2 bg-surface-container text-on-surface rounded-xl text-sm font-medium hover:bg-surface-container-high transition-colors">
               ביטול
             </button>
           </div>

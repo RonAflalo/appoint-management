@@ -7,3 +7,5 @@ server/db/appointments.db-shm
 server/db/appointments.db-wal
 server/.env
 .env
+server/uploads/
+.claude/

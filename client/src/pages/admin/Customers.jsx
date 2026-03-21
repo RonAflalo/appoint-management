@@ -29,23 +29,23 @@ export default function AdminCustomers() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">לקוחות</h1>
-        <p className="text-gray-500 text-sm mt-1">כל הלקוחות הרשומים בעסק</p>
+        <h1 className="font-headline font-extrabold text-3xl text-on-surface">לקוחות</h1>
+        <p className="text-on-surface-variant text-sm mt-1">כל הלקוחות הרשומים בעסק</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-outline-variant/20">
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="חיפוש לפי שם או אימייל..."
-            className="w-full max-w-sm px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full max-w-sm px-4 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
           />
         </div>
 
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
+          <div className="p-8 text-center text-on-surface-variant">
             <span className="text-4xl mb-3 block">👤</span>
             <p>{search ? 'לא נמצאו לקוחות' : 'אין לקוחות רשומים עדיין'}</p>
           </div>
@@ -53,20 +53,20 @@ export default function AdminCustomers() {
           <div>
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 text-gray-600 text-xs uppercase">
+                <tr className="bg-surface-container text-on-surface-variant text-xs uppercase">
                   <th className="px-4 py-3 text-right font-medium">שם</th>
                   <th className="px-4 py-3 text-right font-medium">תורים</th>
                   <th className="px-4 py-3 text-right font-medium">אימות</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-outline-variant/20">
                 {filtered.map(c => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/customers/${c.id}`)}>
+                  <tr key={c.id} className="hover:bg-surface-container-low transition-colors cursor-pointer" onClick={() => navigate(`/admin/customers/${c.id}`)}>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{c.name}</div>
-                      <div className="text-xs text-gray-400 mt-0.5" dir="ltr">{c.email}</div>
+                      <div className="font-medium text-on-surface">{c.name}</div>
+                      <div className="text-xs text-on-surface-variant mt-0.5" dir="ltr">{c.email}</div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{c.appointment_count}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{c.appointment_count}</td>
                     <td className="px-4 py-3">
                       {c.email_verified ? (
                         <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">✓ מאומת</span>
@@ -81,7 +81,7 @@ export default function AdminCustomers() {
           </div>
         )}
       </div>
-      <p className="text-xs text-gray-400 mt-3 text-center">{filtered.length} לקוחות</p>
+      <p className="text-xs text-on-surface-variant mt-3 text-center">{filtered.length} לקוחות</p>
     </div>
   );
 }

@@ -46,7 +46,7 @@ export default function CustomerHome() {
     <div>
       {/* Business info card */}
       {user?.business && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex justify-center">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-4 mb-4 flex justify-center">
           <BusinessSocialLinks business={user.business} />
         </div>
       )}
@@ -54,32 +54,36 @@ export default function CustomerHome() {
       {/* Hero Section */}
       <div
         className="rounded-2xl p-6 mb-6 text-white relative overflow-hidden"
-        style={user?.business?.cover_url ? {} : {}}
+        style={user?.business?.cover_url
+          ? {}
+          : { background: 'linear-gradient(135deg, #3525cd 0%, #712ae2 100%)' }}
       >
         {user?.business?.cover_url && (
-          <img
-            src={user.business.cover_url}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            onError={e => e.target.style.display='none'}
-          />
+          <>
+            <img
+              src={user.business.cover_url}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={e => e.target.style.display='none'}
+            />
+            <div className="absolute inset-0 bg-black/50 rounded-2xl" />
+          </>
         )}
-        <div className={`absolute inset-0 ${user?.business?.cover_url ? 'bg-black/50' : 'bg-gradient-to-br from-indigo-600 to-purple-700'} rounded-2xl`} />
         <div className="relative z-10">
         <h1 className="text-2xl font-bold mb-1">שלום, {user?.name}! 👋</h1>
-        <p className="text-indigo-200 text-sm mb-5">{user?.business?.name ? `ברוך הבא ל${user.business.name}` : 'ברוך הבא'}</p>
+        <p className="text-white/70 text-sm mb-5">{user?.business?.name ? `ברוך הבא ל${user.business.name}` : 'ברוך הבא'}</p>
 
         {nextAppointment ? (
-          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 mb-4">
-            <p className="text-indigo-100 text-xs mb-1">התור הקרוב שלך</p>
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 mb-4">
+            <p className="text-white/70 text-xs mb-1">התור הקרוב שלך</p>
             <p className="font-semibold text-lg">{nextAppointment.service_name}</p>
-            <p className="text-indigo-200 text-sm">עם {nextAppointment.worker_name}</p>
+            <p className="text-white/70 text-sm">עם {nextAppointment.worker_name}</p>
             <p className="text-white font-medium mt-1">{formatDateTime(nextAppointment.start_time)}</p>
             <a
               href={buildCalendarUrl(nextAppointment, user?.business?.name, user?.business?.address)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 flex items-center justify-center gap-2 w-full py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-medium transition-colors"
+              className="mt-3 flex items-center justify-center gap-2 w-full py-2 bg-white/20 hover:bg-white/30 rounded-xl text-white text-sm font-medium transition-colors"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                 <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
@@ -91,34 +95,35 @@ export default function CustomerHome() {
 
         <button
           onClick={() => navigate('/customer/book')}
-          className="w-full py-3 bg-white text-indigo-700 font-bold rounded-xl hover:bg-indigo-50 transition-colors text-base shadow-lg"
+          className="w-full py-3 bg-white text-primary font-bold rounded-2xl hover:bg-white/90 transition-colors text-base shadow-lg"
         >
-          📅 קבע תור חדש
+          <span className="material-symbols-outlined align-middle text-base mr-1">calendar_month</span>
+          קבע תור חדש
         </button>
         </div>
       </div>
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
-          <div className="text-2xl font-bold text-indigo-600">{upcomingAppointments.length}</div>
-          <div className="text-xs text-gray-500 mt-1">תורים קרובים</div>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-4 text-center">
+          <div className="text-primary text-2xl font-headline font-extrabold">{upcomingAppointments.length}</div>
+          <div className="text-xs text-on-surface-variant mt-1">תורים קרובים</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
-          <div className="text-2xl font-bold text-emerald-600">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-4 text-center">
+          <div className="text-emerald-600 text-2xl font-headline font-extrabold">
             {appointments.filter(a => a.status === 'completed').length}
           </div>
-          <div className="text-xs text-gray-500 mt-1">ביקורים שהושלמו</div>
+          <div className="text-xs text-on-surface-variant mt-1">ביקורים שהושלמו</div>
         </div>
       </div>
 
       {/* Recent appointments */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">תורים אחרונים</h2>
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm">
+        <div className="px-5 py-4 border-b border-outline-variant/20 flex items-center justify-between">
+          <h2 className="font-semibold text-on-surface">תורים אחרונים</h2>
           <button
             onClick={() => navigate('/customer/appointments')}
-            className="text-sm text-indigo-600 hover:text-indigo-700"
+            className="text-primary text-sm font-bold"
           >
             הכל
           </button>
@@ -128,22 +133,22 @@ export default function CustomerHome() {
           <LoadingSpinner />
         ) : recentAppointments.length === 0 ? (
           <div className="p-8 text-center">
-            <span className="text-4xl mb-3 block">📋</span>
-            <p className="text-gray-500 text-sm">עדיין אין תורים</p>
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant/30 mb-3 block">event_note</span>
+            <p className="text-on-surface-variant text-sm">עדיין אין תורים</p>
             <button
               onClick={() => navigate('/customer/book')}
-              className="mt-3 text-sm text-indigo-600 font-medium hover:text-indigo-700"
+              className="mt-3 text-sm text-primary font-medium hover:opacity-80"
             >
               קבע תור ראשון
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-outline-variant/20">
             {recentAppointments.map(appt => (
               <div key={appt.id} className="px-5 py-4 flex items-center justify-between">
                 <div>
-                  <div className="font-medium text-gray-900 text-sm">{appt.service_name}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{formatDateTime(appt.start_time)}</div>
+                  <div className="text-on-surface font-medium text-sm">{appt.service_name}</div>
+                  <div className="text-xs text-on-surface-variant mt-0.5">{formatDateTime(appt.start_time)}</div>
                 </div>
                 <StatusBadge status={appt.status} />
               </div>

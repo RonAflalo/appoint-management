@@ -37,20 +37,20 @@ export default function ThreeDotMenu({ items }) {
     <div
       ref={menuRef}
       style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999 }}
-      className="bg-white border border-gray-200 rounded-xl shadow-lg min-w-[160px] py-1 overflow-hidden"
+      className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl shadow-xl min-w-[168px] py-1.5 overflow-hidden"
       onClick={e => e.stopPropagation()}
     >
       {items.map((item, i) =>
         item === null ? (
-          <hr key={i} className="my-1 border-gray-100" />
+          <hr key={i} className="my-1 border-surface-container" />
         ) : (
           <button
             key={i}
             onClick={() => { setOpen(false); item.onClick(); }}
-            className={`w-full text-right px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2
-              ${item.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'}`}
+            className={`w-full text-right px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2
+              ${item.danger ? 'text-error hover:bg-red-50' : 'text-on-surface hover:bg-surface-container-low'}`}
           >
-            {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
+            {item.icon && <span className="flex-shrink-0 text-base">{item.icon}</span>}
             <span>{item.label}</span>
           </button>
         )
@@ -63,13 +63,9 @@ export default function ThreeDotMenu({ items }) {
       <button
         ref={btnRef}
         onClick={handleOpen}
-        className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-xl transition-colors"
       >
-        <span className="flex flex-col items-center gap-[3px]">
-          <span className="block w-[4px] h-[4px] rounded-full bg-current" />
-          <span className="block w-[4px] h-[4px] rounded-full bg-current" />
-          <span className="block w-[4px] h-[4px] rounded-full bg-current" />
-        </span>
+        <span className="material-symbols-outlined text-xl">more_vert</span>
       </button>
       {createPortal(dropdown, document.body)}
     </div>

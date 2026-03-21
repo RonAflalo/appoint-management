@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -35,6 +35,18 @@ export default function CustomerBook() {
 
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const navRef = useRef(null);
+
+  const scrollToNav = () => {
+    if (navRef.current) {
+      const rect = navRef.current.getBoundingClientRect();
+      const bottomNavHeight = 100; // mobile bottom tab bar + padding
+      const scrollAmount = rect.bottom - window.innerHeight + bottomNavHeight;
+      if (scrollAmount > 0) {
+        window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+      }
+    }
+  };
 
   useEffect(() => {
     Promise.allSettled([getPublicServices(), getBusinessPolicy()])
@@ -94,6 +106,7 @@ export default function CustomerBook() {
     setSelectedDate(date);
     setSelectedSlot(null);
     fetchSlots(date);
+    scrollToNav();
   };
 
   const handleBook = async () => {
@@ -187,11 +200,11 @@ export default function CustomerBook() {
     return (
       <div className="text-center py-12">
         <div className="text-5xl mb-4">⏳</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">נרשמת לרשימת המתנה!</h2>
-        <p className="text-gray-500 text-sm mb-6">אם התור יתפנה נשלח לך מייל עם קישור לאישור — יש לך 30 דקות לאשר.</p>
+        <h2 className="text-xl font-bold text-on-surface mb-2">נרשמת לרשימת המתנה!</h2>
+        <p className="text-on-surface-variant text-sm mb-6">אם התור יתפנה נשלח לך מייל עם קישור לאישור — יש לך 30 דקות לאשר.</p>
         <button
           onClick={() => navigate('/customer/appointments')}
-          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors"
+          className="px-6 py-3 primary-gradient text-white rounded-xl font-semibold transition-colors"
         >
           לתורים שלי
         </button>
@@ -203,30 +216,32 @@ export default function CustomerBook() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">קביעת תור</h1>
-        <p className="text-gray-500 text-sm mt-1">בחר שירות, עובד, תאריך ושעה</p>
+        <h1 className="font-headline font-extrabold text-3xl text-on-surface">קביעת תור</h1>
+        <p className="text-on-surface-variant text-sm mt-1">בחר שירות, עובד, תאריך ושעה</p>
       </div>
 
       {/* Progress indicator */}
-      <div className="flex items-center mb-8 overflow-x-auto pb-1">
+      <div className="flex items-center mb-8 overflow-x-auto py-2 px-1">
         {STEPS.map((s, i) => (
           <div key={i} className="flex items-center flex-shrink-0">
             <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors
-              ${i < step ? 'bg-indigo-600 text-white'
-                : i === step ? 'bg-indigo-600 text-white ring-4 ring-indigo-100'
-                : 'bg-gray-100 text-gray-400'}`}>
+              ${i < step
+                ? 'bg-emerald-500 text-white'
+                : i === step
+                  ? 'bg-primary text-white ring-4 ring-primary/20'
+                  : 'bg-surface-container-high text-on-surface border-2 border-outline-variant'}`}>
               {i < step ? '✓' : i + 1}
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`h-0.5 w-8 mx-1 transition-colors ${i < step ? 'bg-indigo-600' : 'bg-gray-200'}`}></div>
+              <div className={`h-0.5 w-8 mx-1 transition-colors ${i < step ? 'bg-emerald-500' : 'bg-outline-variant'}`}></div>
             )}
           </div>
         ))}
       </div>
 
       {/* Step content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{STEPS[step]}</h2>
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5 mb-6">
+        <h2 className="text-lg font-semibold text-on-surface mb-4">{STEPS[step]}</h2>
 
         {/* Step 0: Service */}
         {step === 0 && (() => {
@@ -243,19 +258,19 @@ export default function CustomerBook() {
           const renderService = (service) => (
             <button
               key={service.id}
-              onClick={() => setSelectedService(service)}
+              onClick={() => { setSelectedService(service); scrollToNav(); }}
               className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all text-right w-full
                 ${selectedService?.id === service.id
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-gray-100 hover:border-gray-300'}`}
+                  ? 'border-primary bg-primary/10'
+                  : 'border-outline-variant/20 hover:border-primary/40'}`}
             >
               <div>
-                <div className="font-semibold text-gray-900">{service.name}</div>
-                <div className="text-sm text-gray-500 mt-0.5">{service.duration_minutes} דקות</div>
+                <div className="font-semibold text-on-surface">{service.name}</div>
+                <div className="text-sm text-on-surface-variant mt-0.5">{service.duration_minutes} דקות</div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-indigo-600">₪{service.price}</div>
-                {selectedService?.id === service.id && <div className="text-indigo-500 text-lg">✓</div>}
+                <div className="text-lg font-bold text-primary">₪{service.price}</div>
+                {selectedService?.id === service.id && <div className="text-primary text-lg">✓</div>}
               </div>
             </button>
           );
@@ -264,7 +279,7 @@ export default function CustomerBook() {
             <div className="space-y-4">
               {Object.values(grouped).map(group => (
                 <div key={group.name}>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{group.name}</p>
+                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">{group.name}</p>
                   <div className="grid grid-cols-1 gap-3">{group.items.map(renderService)}</div>
                 </div>
               ))}
@@ -282,37 +297,41 @@ export default function CustomerBook() {
           <div className="space-y-3">
             {loadingWorkers ? (
               <div className="py-6 flex justify-center">
-                <div className="h-6 w-6 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"></div>
+                <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary/20 border-t-primary"></div>
               </div>
             ) : (
               <>
                 <button
-                  onClick={() => setSelectedWorker(null)}
+                  onClick={() => { setSelectedWorker(null); scrollToNav(); }}
                   className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-right
-                    ${selectedWorker === null ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
+                    ${selectedWorker === null
+                      ? 'border-primary bg-primary/10'
+                      : 'border-outline-variant/20 hover:border-primary/40'}`}
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
                     כ
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">כל עובד זמין</div>
-                    <div className="text-sm text-gray-500">הצג שעות זמינות לכל העובדים</div>
+                    <div className="font-semibold text-on-surface">כל עובד זמין</div>
+                    <div className="text-sm text-on-surface-variant">הצג שעות זמינות לכל העובדים</div>
                   </div>
-                  {selectedWorker === null && <span className="mr-auto text-indigo-500 text-lg">✓</span>}
+                  {selectedWorker === null && <span className="mr-auto text-primary text-lg">✓</span>}
                 </button>
 
                 {workers.map(worker => (
                   <button
                     key={worker.id}
-                    onClick={() => setSelectedWorker(worker)}
+                    onClick={() => { setSelectedWorker(worker); scrollToNav(); }}
                     className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-right
-                      ${selectedWorker?.id === worker.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
+                      ${selectedWorker?.id === worker.id
+                        ? 'border-primary bg-primary/10'
+                        : 'border-outline-variant/20 hover:border-primary/40'}`}
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
                       {worker.name[0]}
                     </div>
-                    <div className="font-semibold text-gray-900">{worker.name}</div>
-                    {selectedWorker?.id === worker.id && <span className="mr-auto text-indigo-500 text-lg">✓</span>}
+                    <div className="font-semibold text-on-surface">{worker.name}</div>
+                    {selectedWorker?.id === worker.id && <span className="mr-auto text-primary text-lg">✓</span>}
                   </button>
                 ))}
               </>
@@ -339,8 +358,8 @@ export default function CustomerBook() {
               }
             `}</style>
             {loadingDays && (
-              <p className="text-xs text-gray-400 text-center mb-2 flex items-center justify-center gap-1">
-                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500"></span>
+              <p className="text-xs text-on-surface-variant text-center mb-2 flex items-center justify-center gap-1">
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-surface-container border-t-on-surface-variant"></span>
                 בודק זמינות ימים...
               </p>
             )}
@@ -369,17 +388,17 @@ export default function CustomerBook() {
               }}
             />
             {selectedDate && (
-              <p className="mt-3 text-sm text-indigo-600 font-medium text-center">
+              <p className="mt-3 text-sm text-primary font-medium text-center">
                 נבחר: {selectedDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             )}
-            <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 justify-center">
+            <div className="mt-3 flex items-center gap-4 text-xs text-on-surface-variant justify-center">
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 bg-red-100 rounded border border-red-200"></div>
                 <span>אין זמינות</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 bg-white rounded border border-gray-300"></div>
+                <div className="w-4 h-4 bg-surface-container-lowest rounded border border-outline-variant/30"></div>
                 <span>זמין לתור</span>
               </div>
             </div>
@@ -394,11 +413,11 @@ export default function CustomerBook() {
             ) : slots.length === 0 && bookedSlots.length === 0 ? (
               <div className="text-center py-8">
                 <span className="text-4xl mb-3 block">😔</span>
-                <p className="text-gray-500 font-medium">אין שעות זמינות ביום זה</p>
-                <p className="text-gray-400 text-sm mt-1">נסה תאריך אחר</p>
+                <p className="text-on-surface-variant font-medium">אין שעות זמינות ביום זה</p>
+                <p className="text-on-surface-variant/60 text-sm mt-1">נסה תאריך אחר</p>
                 <button
                   onClick={() => setStep(2)}
-                  className="mt-4 text-indigo-600 font-medium text-sm hover:text-indigo-700"
+                  className="mt-4 text-primary font-medium text-sm hover:text-primary/80"
                 >
                   חזור לבחירת תאריך
                 </button>
@@ -412,15 +431,15 @@ export default function CustomerBook() {
                     return (
                       <button
                         key={slot}
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`py-3 rounded-xl text-sm font-medium transition-all border-2
+                        onClick={() => { setSelectedSlot(slot); scrollToNav(); }}
+                        className={`py-3 rounded-xl text-sm font-medium transition-all border
                           ${taken
                             ? selected
                               ? 'border-red-500 bg-red-500 text-white'
-                              : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                              : 'bg-surface-container text-on-surface-variant/40 line-through cursor-not-allowed border-transparent'
                             : selected
-                              ? 'border-indigo-500 bg-indigo-500 text-white'
-                              : 'border-gray-100 hover:border-indigo-300 text-gray-700 hover:bg-indigo-50'}`}
+                              ? 'border-primary bg-primary/10 text-primary font-semibold'
+                              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-primary hover:bg-primary/5 text-on-surface'}`}
                       >
                         <div>{formatTime(slot)}</div>
                         {taken && <div className="text-xs mt-0.5 opacity-80">תפוס</div>}
@@ -429,13 +448,13 @@ export default function CustomerBook() {
                   })}
                 </div>
                 {selectedSlot && isBooked(selectedSlot) && (
-                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
                     <p className="font-semibold mb-1">השעה הזו תפוסה</p>
                     <p className="text-amber-700 mb-3">ניתן להצטרף לרשימת המתנה — אם התור יתפנה תקבל הודעה במייל עם 30 דקות לאישור.</p>
                     <button
                       onClick={handleJoinWaitlist}
                       disabled={joiningWaitlist}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors"
                     >
                       {joiningWaitlist ? 'מצטרף...' : 'הצטרף לרשימת המתנה'}
                     </button>
@@ -449,46 +468,46 @@ export default function CustomerBook() {
         {/* Step 4: Confirmation */}
         {step === 4 && (
           <div className="space-y-4">
-            <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
+            <div className="bg-primary/10 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">שירות</span>
-                <span className="font-semibold text-gray-900">{selectedService?.name}</span>
+                <span className="text-on-surface-variant">שירות</span>
+                <span className="font-semibold text-on-surface">{selectedService?.name}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">עובד</span>
-                <span className="font-semibold text-gray-900">{selectedWorker?.name || 'הקצאה אוטומטית'}</span>
+                <span className="text-on-surface-variant">עובד</span>
+                <span className="font-semibold text-on-surface">{selectedWorker?.name || 'הקצאה אוטומטית'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">תאריך</span>
-                <span className="font-semibold text-gray-900">
+                <span className="text-on-surface-variant">תאריך</span>
+                <span className="font-semibold text-on-surface">
                   {selectedDate?.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">שעה</span>
-                <span className="font-semibold text-gray-900">{selectedSlot ? formatTime(selectedSlot) : ''}</span>
+                <span className="text-on-surface-variant">שעה</span>
+                <span className="font-semibold text-on-surface">{selectedSlot ? formatTime(selectedSlot) : ''}</span>
               </div>
-              <div className="border-t border-indigo-100 pt-3 flex items-center justify-between text-sm">
-                <span className="text-gray-500">מחיר</span>
-                <span className="font-bold text-indigo-600 text-lg">₪{selectedService?.price}</span>
+              <div className="border-t border-primary/20 pt-3 flex items-center justify-between text-sm">
+                <span className="text-on-surface-variant">מחיר</span>
+                <span className="font-bold text-primary text-lg">₪{selectedService?.price}</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">הערות (אופציונלי)</label>
+              <label className="block text-sm font-medium text-on-surface mb-1.5">הערות (אופציונלי)</label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="הוסף הערה לתור..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full px-3 py-2 border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim resize-none bg-surface-container-lowest text-on-surface"
               />
             </div>
 
             {termsEnabled && termsText && (
-              <div className="border border-gray-200 rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-700 mb-2">תנאי שימוש</p>
-                <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 max-h-32 overflow-y-auto mb-3 whitespace-pre-wrap">
+              <div className="border border-outline-variant/20 rounded-xl p-4">
+                <p className="text-xs font-semibold text-on-surface mb-2">תנאי שימוש</p>
+                <div className="text-xs text-on-surface-variant bg-surface-container-low rounded-lg p-3 max-h-32 overflow-y-auto mb-3 whitespace-pre-wrap">
                   {termsText}
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -496,9 +515,9 @@ export default function CustomerBook() {
                     type="checkbox"
                     checked={termsAccepted}
                     onChange={e => setTermsAccepted(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                    className="w-4 h-4 text-primary rounded border-outline-variant/30 focus:ring-primary-fixed-dim"
                   />
-                  <span className="text-sm text-gray-700">קראתי ואני מסכים/ה לתנאי השימוש</span>
+                  <span className="text-sm text-on-surface">קראתי ואני מסכים/ה לתנאי השימוש</span>
                 </label>
               </div>
             )}
@@ -507,11 +526,11 @@ export default function CustomerBook() {
       </div>
 
       {/* Navigation */}
-      <div className="flex gap-3">
+      <div ref={navRef} className="flex gap-3">
         {step > 0 && (
           <button
             onClick={() => setStep(s => s - 1)}
-            className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+            className="flex-1 py-3 text-on-surface rounded-xl font-bold transition-colors" style={{ backgroundColor: 'gainsboro' }}
           >
             חזור
           </button>
@@ -520,7 +539,7 @@ export default function CustomerBook() {
           <button
             onClick={goNext}
             disabled={!canGoNext()}
-            className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-200 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
+            className="flex-1 py-3 primary-gradient disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-opacity"
           >
             המשך
           </button>
@@ -528,7 +547,7 @@ export default function CustomerBook() {
           <button
             onClick={handleBook}
             disabled={booking}
-            className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+            className="flex-1 py-3 primary-gradient disabled:opacity-40 text-white rounded-xl font-bold transition-opacity flex items-center justify-center gap-2"
           >
             {booking ? (
               <>

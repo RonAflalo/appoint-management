@@ -33,14 +33,14 @@ if (process.env.NODE_ENV !== 'test') {
   const rateLimit = require('express-rate-limit');
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: 50,
     message: { success: false, message: 'יותר מדי ניסיונות, נסה שוב מאוחר יותר' },
     standardHeaders: true,
     legacyHeaders: false,
   });
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    max: 1000,
     message: { success: false, message: 'יותר מדי בקשות, נסה שוב מאוחר יותר' },
     standardHeaders: true,
     legacyHeaders: false,

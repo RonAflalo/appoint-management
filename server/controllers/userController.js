@@ -4,6 +4,7 @@ const { getAvailableSlots, getPossibleSlots } = require('../utils/slots');
 const { notifyNextInQueue } = require('../utils/waitlist');
 const { sendNewBookingToWorker, sendAppointmentConfirmed, sendRescheduleAcceptedToWorker, sendAppointmentCancelledByCustomer } = require('../services/emailService');
 const { formatDateTime } = require('../utils/dateFormat');
+const { createNotification, notifyAdminAndWorker } = require('../services/notificationService');
 
 const getServices = (req, res) => {
   const db = getDb();
@@ -167,6 +168,8 @@ const bookAppointment = (req, res) => {
     dateTime: formatDateTime(appointment.start_time),
   });
 
+  notifyAdminAndWorker(req.user.business_id || 1, workerId, 'new_appointment', `תור חדש: ${req.user.name} - ${appointment.service_name}`);
+
   // Google Calendar sync (fire-and-forget)
   createCalendarEvent(workerId, {
     start_time: appointment.start_time,
@@ -241,6 +244,12 @@ const cancelAppointment = (req, res) => {
     serviceName: appt.service_name,
     dateTime: formatDateTime(appt.start_time),
   });
+
+  if (appt.status === 'confirmed') {
+    notifyAdminAndWorker(fullAppt.business_id, fullAppt.worker_id, 'appointment_cancelled', `תור מאושר של ${appt.customer_name} בוטל - ${appt.service_name}`);
+  } else if (appt.status === 'reschedule_requested') {
+    notifyAdminAndWorker(fullAppt.business_id, fullAppt.worker_id, 'reschedule_cancelled', `${appt.customer_name} דחה את שינוי המועד - ${appt.service_name}`);
+  }
 
   notifyNextInQueue({ businessId: fullAppt.business_id, serviceId: fullAppt.service_id, slotTime: fullAppt.start_time, workerId: fullAppt.worker_id })
     .catch(err => console.error('[Waitlist] notifyNextInQueue failed after customer cancel:', err));
@@ -318,6 +327,9 @@ const acceptReschedule = (req, res) => {
     dateTime: newDateTimeLabel,
   });
 
+  const rescheduleApptFull = db.prepare('SELECT business_id FROM appointments WHERE id = ?').get(id);
+  notifyAdminAndWorker(rescheduleApptFull.business_id, appt.worker_id, 'reschedule_accepted', `${appt.customer_name} אישר שינוי מועד - ${appt.service_name}`);
+
   res.json({ success: true, message: 'המועד החדש אושר בהצלחה' });
 };
 
@@ -353,6 +365,9 @@ const addToWaitlist = (req, res) => {
     INSERT INTO waiting_list (business_id, customer_id, service_id, worker_id, slot_time)
     VALUES (?, ?, ?, ?, ?)
   `).run(businessId, req.user.id, serviceId, workerId || null, normalizedSlot);
+
+  const svc = db.prepare('SELECT name FROM services WHERE id = ?').get(serviceId);
+  notifyAdminAndWorker(businessId, workerId || null, 'waitlist_joined', `${req.user.name} הצטרף לרשימת המתנה - ${svc?.name || ''}`);
 
   return res.json({ success: true, message: 'נוספת לרשימת המתנה' });
 };
