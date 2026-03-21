@@ -166,8 +166,8 @@ export default function Login() {
 
       </div>
 
-      {/* QA quick-login panel */}
-      <div className="mt-4 w-full max-w-md">
+      {/* QA quick-login panel — mobile only */}
+      <div className="lg:hidden mt-4 w-full max-w-md">
         <button
           onClick={() => setQaOpen(v => !v)}
           className="w-full flex items-center justify-between px-4 py-2.5 bg-white/70 hover:bg-white border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors"
