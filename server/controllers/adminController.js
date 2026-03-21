@@ -283,8 +283,8 @@ const requestReschedule = (req, res) => {
   `).get(id, req.user.business_id);
 
   if (!appt) return res.status(404).json({ success: false, message: 'תור לא נמצא' });
-  if (appt.status !== 'confirmed') {
-    return res.status(400).json({ success: false, message: 'ניתן לבקש שינוי מועד רק לתורים מאושרים' });
+  if (!['confirmed', 'pending'].includes(appt.status)) {
+    return res.status(400).json({ success: false, message: 'ניתן לבקש שינוי מועד רק לתורים פעילים' });
   }
 
   db.prepare(`

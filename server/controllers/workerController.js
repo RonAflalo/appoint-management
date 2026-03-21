@@ -125,8 +125,8 @@ const requestReschedule = async (req, res) => {
   if (!appt || appt.worker_id !== req.user.id) {
     return res.status(404).json({ success: false, message: 'תור לא נמצא' });
   }
-  if (appt.status !== 'confirmed') {
-    return res.status(400).json({ success: false, message: 'ניתן לבקש שינוי מועד רק לתורים מאושרים' });
+  if (!['confirmed', 'pending'].includes(appt.status)) {
+    return res.status(400).json({ success: false, message: 'ניתן לבקש שינוי מועד רק לתורים פעילים' });
   }
 
   db.prepare(`
@@ -178,7 +178,7 @@ const getAvailability = (req, res) => {
 };
 
 const setAvailability = (req, res) => {
-  const { date, is_blocked, custom_start, custom_end } = req.body;
+  const { date, is_blocked, custom_start, custom_end, block_start, block_end } = req.body;
   if (!date) {
     return res.status(400).json({ success: false, message: 'יש לציין תאריך' });
   }
@@ -188,17 +188,20 @@ const setAvailability = (req, res) => {
     'SELECT id FROM availability_overrides WHERE worker_id = ? AND date = ?'
   ).get(req.user.id, date);
 
+  const blockStartVal = !is_blocked && block_start && block_end ? block_start : null;
+  const blockEndVal = !is_blocked && block_start && block_end ? block_end : null;
+
   if (existing) {
     db.prepare(`
       UPDATE availability_overrides
-      SET is_blocked = ?, custom_start = ?, custom_end = ?
+      SET is_blocked = ?, custom_start = ?, custom_end = ?, block_start = ?, block_end = ?
       WHERE id = ?
-    `).run(is_blocked ? 1 : 0, custom_start || null, custom_end || null, existing.id);
+    `).run(is_blocked ? 1 : 0, custom_start || null, custom_end || null, blockStartVal, blockEndVal, existing.id);
   } else {
     db.prepare(`
-      INSERT INTO availability_overrides (worker_id, date, is_blocked, custom_start, custom_end)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(req.user.id, date, is_blocked ? 1 : 0, custom_start || null, custom_end || null);
+      INSERT INTO availability_overrides (worker_id, date, is_blocked, custom_start, custom_end, block_start, block_end)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(req.user.id, date, is_blocked ? 1 : 0, custom_start || null, custom_end || null, blockStartVal, blockEndVal);
   }
 
   const override = db.prepare(

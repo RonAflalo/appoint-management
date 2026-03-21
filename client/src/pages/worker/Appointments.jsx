@@ -156,6 +156,7 @@ export default function WorkerAppointments() {
     const items = [];
     if (appt.status === 'pending') {
       items.push({ label: 'אשר', icon: '✓', onClick: () => handleApprove(appt.id) });
+      items.push({ label: 'שנה מועד', icon: '📅', onClick: () => openRescheduleModal(appt) });
       items.push({ label: 'בטל', icon: '✕', onClick: () => handleCancel(appt.id), danger: true });
     }
     if (appt.status === 'confirmed') {
@@ -174,6 +175,7 @@ export default function WorkerAppointments() {
       {appt.status === 'pending' && (
         <>
           <button onClick={() => handleApprove(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">{busy === appt.id ? '...' : 'אשר'}</button>
+          <button onClick={(e) => openRescheduleModal(appt, e)} disabled={busy === appt.id} className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">שנה מועד</button>
           <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">בטל</button>
         </>
       )}

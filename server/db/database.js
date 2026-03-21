@@ -206,6 +206,10 @@ function initializeDatabase(overridePath) {
   // Migrate: soft-delete for workers
   try { db.exec("ALTER TABLE users ADD COLUMN deleted_at TEXT"); } catch (_) {}
 
+  // Migrate: partial day block window
+  try { db.exec("ALTER TABLE availability_overrides ADD COLUMN block_start TEXT"); } catch (_) {}
+  try { db.exec("ALTER TABLE availability_overrides ADD COLUMN block_end TEXT"); } catch (_) {}
+
   // Migrate: appointment photos
   try {
     db.exec(`

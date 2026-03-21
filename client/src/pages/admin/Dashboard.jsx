@@ -140,6 +140,7 @@ export default function AdminDashboard() {
     <div className="flex items-center gap-1.5 flex-wrap" onClick={e => e.stopPropagation()}>
       {appt.status === 'pending' && (<>
         <button onClick={() => handleStatus(appt.id, 'confirmed')} className="px-2.5 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors">אשר</button>
+        <button onClick={(e) => openReschedule(appt, e)} className="px-2.5 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors">שנה מועד</button>
         <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
       </>)}
       {appt.status === 'confirmed' && (<>

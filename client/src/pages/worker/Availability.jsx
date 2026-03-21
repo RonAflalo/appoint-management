@@ -10,7 +10,7 @@ export default function WorkerAvailability() {
   const [overrides, setOverrides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [form, setForm] = useState({ is_blocked: false, custom_start: '', custom_end: '' });
+  const [form, setForm] = useState({ is_blocked: false, custom_start: '', custom_end: '', block_start: '', block_end: '' });
   const [saving, setSaving] = useState(false);
   const { addToast } = useToast();
 
@@ -35,20 +35,30 @@ export default function WorkerAvailability() {
         is_blocked: existing.is_blocked === 1,
         custom_start: existing.custom_start || '',
         custom_end: existing.custom_end || '',
+        block_start: existing.block_start || '',
+        block_end: existing.block_end || '',
       });
     } else {
-      setForm({ is_blocked: false, custom_start: '', custom_end: '' });
+      setForm({ is_blocked: false, custom_start: '', custom_end: '', block_start: '', block_end: '' });
     }
   }, [selectedDate, overrides]);
 
   const handleSave = async () => {
     const dateStr = toDateString(selectedDate);
     if (!form.is_blocked && form.custom_start && !form.custom_end) {
-      addToast('יש להזין גם שעת סיום', 'error');
+      addToast('יש להזין גם שעת סיום לשעות מותאמות', 'error');
       return;
     }
     if (!form.is_blocked && form.custom_end && !form.custom_start) {
-      addToast('יש להזין גם שעת התחלה', 'error');
+      addToast('יש להזין גם שעת התחלה לשעות מותאמות', 'error');
+      return;
+    }
+    if (!form.is_blocked && form.block_start && !form.block_end) {
+      addToast('יש להזין גם שעת סיום לחסימה', 'error');
+      return;
+    }
+    if (!form.is_blocked && form.block_end && !form.block_start) {
+      addToast('יש להזין גם שעת התחלה לחסימה', 'error');
       return;
     }
     setSaving(true);
@@ -58,6 +68,8 @@ export default function WorkerAvailability() {
         is_blocked: form.is_blocked,
         custom_start: !form.is_blocked ? form.custom_start || null : null,
         custom_end: !form.is_blocked ? form.custom_end || null : null,
+        block_start: !form.is_blocked ? form.block_start || null : null,
+        block_end: !form.is_blocked ? form.block_end || null : null,
       });
       addToast('הזמינות עודכנה בהצלחה');
       load();
@@ -75,7 +87,9 @@ export default function WorkerAvailability() {
     const dateStr = toDateString(date);
     const override = overrides.find(o => o.date === dateStr);
     if (!override) return null;
-    return override.is_blocked ? 'blocked-day' : 'custom-hours-day';
+    if (override.is_blocked) return 'blocked-day';
+    if (override.block_start && override.block_end) return 'block-window-day';
+    return 'custom-hours-day';
   };
 
   if (loading) return <LoadingSpinner />;
@@ -103,8 +117,15 @@ export default function WorkerAvailability() {
               font-weight: 600;
               border-radius: 6px;
             }
+            .block-window-day {
+              background: #fef3c7 !important;
+              color: #d97706 !important;
+              font-weight: 600;
+              border-radius: 6px;
+            }
             .blocked-day.react-calendar__tile--active,
-            .custom-hours-day.react-calendar__tile--active {
+            .custom-hours-day.react-calendar__tile--active,
+            .block-window-day.react-calendar__tile--active {
               background: #6366f1 !important;
               color: white !important;
             }
@@ -116,7 +137,7 @@ export default function WorkerAvailability() {
             locale="he-IL"
             minDate={new Date()}
           />
-          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 flex-wrap">
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 bg-red-100 rounded"></div>
               <span>חסום</span>
@@ -124,6 +145,10 @@ export default function WorkerAvailability() {
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 bg-green-100 rounded"></div>
               <span>שעות מותאמות</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 bg-yellow-100 rounded"></div>
+              <span>חסימת שעות</span>
             </div>
           </div>
         </div>
@@ -135,8 +160,12 @@ export default function WorkerAvailability() {
               {selectedDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
               {selectedOverride && (
                 <span className={`mr-2 text-xs px-2 py-0.5 rounded-full
-                  ${selectedOverride.is_blocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                  {selectedOverride.is_blocked ? 'חסום' : 'שעות מותאמות'}
+                  ${selectedOverride.is_blocked
+                    ? 'bg-red-100 text-red-700'
+                    : selectedOverride.block_start
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-green-100 text-green-700'}`}>
+                  {selectedOverride.is_blocked ? 'חסום' : selectedOverride.block_start ? 'חסימת שעות' : 'שעות מותאמות'}
                 </span>
               )}
             </h2>
@@ -156,30 +185,60 @@ export default function WorkerAvailability() {
               </label>
 
               {!form.is_blocked && (
-                <div className="space-y-3">
-                  <p className="text-xs text-gray-500">השאר ריק לשימוש בשעות ברירת מחדל של העסק</p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">שעת התחלה</label>
-                      <input
-                        type="time"
-                        value={form.custom_start}
-                        onChange={e => setForm(p => ({ ...p, custom_start: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </div>
-                    <span className="text-gray-400 mt-5">-</span>
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">שעת סיום</label>
-                      <input
-                        type="time"
-                        value={form.custom_end}
-                        onChange={e => setForm(p => ({ ...p, custom_end: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
+                <>
+                  <div className="space-y-3">
+                    <p className="text-xs text-gray-500">שינוי שעות עבודה ביום זה (השאר ריק לשעות ברירת מחדל)</p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">שעת התחלה</label>
+                        <input
+                          type="time"
+                          value={form.custom_start}
+                          onChange={e => setForm(p => ({ ...p, custom_start: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <span className="text-gray-400 mt-5">-</span>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">שעת סיום</label>
+                        <input
+                          type="time"
+                          value={form.custom_end}
+                          onChange={e => setForm(p => ({ ...p, custom_end: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  <div className="border-t border-gray-100 pt-3 space-y-3">
+                    <p className="text-xs font-medium text-amber-700">חסימת טווח שעות (למשל: הפסקת צהריים)</p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">מ-</label>
+                        <input
+                          type="time"
+                          value={form.block_start}
+                          onChange={e => setForm(p => ({ ...p, block_start: e.target.value }))}
+                          className="w-full px-3 py-2 border border-amber-200 bg-amber-50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                      </div>
+                      <span className="text-gray-400 mt-5">-</span>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">עד-</label>
+                        <input
+                          type="time"
+                          value={form.block_end}
+                          onChange={e => setForm(p => ({ ...p, block_end: e.target.value }))}
+                          className="w-full px-3 py-2 border border-amber-200 bg-amber-50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                      </div>
+                    </div>
+                    {(form.block_start || form.block_end) && (
+                      <p className="text-xs text-amber-600">תורים בטווח זה לא יוצעו ללקוחות</p>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
@@ -204,10 +263,14 @@ export default function WorkerAvailability() {
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {overrides.map(override => (
                   <div key={override.id} className={`flex items-center justify-between p-2 rounded-lg text-xs
-                    ${override.is_blocked ? 'bg-red-50' : 'bg-green-50'}`}>
+                    ${override.is_blocked ? 'bg-red-50' : override.block_start ? 'bg-yellow-50' : 'bg-green-50'}`}>
                     <span className="font-medium text-gray-700">{formatDate(override.date)}</span>
-                    <span className={override.is_blocked ? 'text-red-600' : 'text-green-600'}>
-                      {override.is_blocked ? 'חסום' : `${override.custom_start} - ${override.custom_end}`}
+                    <span className={override.is_blocked ? 'text-red-600' : override.block_start ? 'text-amber-600' : 'text-green-600'}>
+                      {override.is_blocked
+                        ? 'חסום'
+                        : override.block_start
+                          ? `חסום ${override.block_start}–${override.block_end}`
+                          : `${override.custom_start} - ${override.custom_end}`}
                     </span>
                   </div>
                 ))}

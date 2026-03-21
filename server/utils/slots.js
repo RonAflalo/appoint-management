@@ -29,6 +29,8 @@ function getPossibleSlots({ workerId, serviceId, date, businessId }) {
   function timeToMinutes(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
   const dayStart = timeToMinutes(dayHours.start);
   const dayEnd = timeToMinutes(dayHours.end);
+  const blockStart = override?.block_start ? timeToMinutes(override.block_start) : null;
+  const blockEnd = override?.block_end ? timeToMinutes(override.block_end) : null;
   const slots = [];
   let current = dayStart;
   const now = israelNow();
@@ -37,7 +39,9 @@ function getPossibleSlots({ workerId, serviceId, date, businessId }) {
   const nowMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
 
   while (current + duration <= dayEnd) {
-    if (!isToday || current > nowMinutes) {
+    const slotEnd = current + duration;
+    const inBlockWindow = blockStart !== null && blockEnd !== null && current < blockEnd && slotEnd > blockStart;
+    if (!inBlockWindow && (!isToday || current > nowMinutes)) {
       slots.push(`${date}T${formatTimeMinutes(current)}:00`);
     }
     current += duration;
@@ -95,6 +99,8 @@ function getAvailableSlots({ workerId, serviceId, date, businessId }) {
 
   const dayStart = timeToMinutes(dayHours.start);
   const dayEnd = timeToMinutes(dayHours.end);
+  const blockStart = override?.block_start ? timeToMinutes(override.block_start) : null;
+  const blockEnd = override?.block_end ? timeToMinutes(override.block_end) : null;
 
   // Build list of slots — filter out past slots if date is today
   const slots = [];
@@ -107,6 +113,9 @@ function getAvailableSlots({ workerId, serviceId, date, businessId }) {
   while (current + duration <= dayEnd) {
     const slotStart = current;
     const slotEnd = current + duration;
+
+    // Check for overlap with block window
+    const inBlockWindow = blockStart !== null && blockEnd !== null && slotStart < blockEnd && slotEnd > blockStart;
 
     // Check for overlap with existing appointments
     let hasOverlap = false;
@@ -122,7 +131,7 @@ function getAvailableSlots({ workerId, serviceId, date, businessId }) {
       }
     }
 
-    if (!hasOverlap && (!isToday || slotStart > nowMinutes)) {
+    if (!inBlockWindow && !hasOverlap && (!isToday || slotStart > nowMinutes)) {
       const slotTimeStr = formatTimeMinutes(slotStart);
       const isoStr = `${date}T${slotTimeStr}:00`;
       slots.push(isoStr);
