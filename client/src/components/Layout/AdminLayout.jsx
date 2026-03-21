@@ -49,7 +49,7 @@ export default function AdminLayout({ children }) {
         <p className="text-indigo-300 text-sm mt-1">{user?.name}</p>
         <span className="inline-block mt-1 text-xs bg-indigo-700 text-indigo-200 px-2 py-0.5 rounded-full">מנהל</span>
       </div>
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map(item => (
           <Link
             key={item.path}
