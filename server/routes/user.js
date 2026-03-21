@@ -3,10 +3,10 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const { getServices, getWorkers, getSlots, getAvailableDays, bookAppointment, getMyAppointments, cancelAppointment, acceptReschedule, addToWaitlist, getMyWaitlist, cancelWaitlistEntry, confirmWaitlistEntry, confirmWaitlistEntryInApp, getBusinessPolicy } = require('../controllers/userController');
 
-router.get('/services', getServices);
-router.get('/workers', getWorkers);
-router.get('/slots', getSlots);
-router.get('/available-days', getAvailableDays);
+router.get('/services', authenticate, getServices);
+router.get('/workers', authenticate, getWorkers);
+router.get('/slots', authenticate, getSlots);
+router.get('/available-days', authenticate, getAvailableDays);
 
 router.post('/appointments', authenticate, bookAppointment);
 router.get('/appointments/mine', authenticate, getMyAppointments);

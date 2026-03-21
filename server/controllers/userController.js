@@ -8,7 +8,7 @@ const { createNotification, notifyAdminAndWorker } = require('../services/notifi
 
 const getServices = (req, res) => {
   const db = getDb();
-  const businessId = req.user ? req.user.business_id : 1;
+  const businessId = req.user.business_id;
   const services = db.prepare(`
     SELECT id, name, duration_minutes, price
     FROM services
@@ -21,7 +21,7 @@ const getServices = (req, res) => {
 const getWorkers = (req, res) => {
   const { serviceId } = req.query;
   const db = getDb();
-  const businessId = req.user ? req.user.business_id : 1;
+  const businessId = req.user.business_id;
   const params = [businessId];
   let query = `SELECT id, name FROM users WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1`;
   if (serviceId) {
@@ -40,7 +40,7 @@ const getSlots = (req, res) => {
   }
 
   const db = getDb();
-  const businessId = req.user ? req.user.business_id : 1;
+  const businessId = req.user.business_id;
 
   if (workerId) {
     const slots = getAvailableSlots({ workerId: Number(workerId), serviceId: Number(serviceId), date, businessId });
@@ -78,7 +78,7 @@ const getAvailableDays = (req, res) => {
   }
 
   const db = getDb();
-  const businessId = req.user ? req.user.business_id : 1;
+  const businessId = req.user.business_id;
   const workers = workerId
     ? [{ id: Number(workerId) }]
     : db.prepare("SELECT id FROM users WHERE (role = 'worker' OR (role = 'admin' AND is_worker = 1)) AND business_id = ? AND is_active = 1 AND (NOT EXISTS (SELECT 1 FROM worker_services WHERE worker_id = users.id) OR EXISTS (SELECT 1 FROM worker_services WHERE worker_id = users.id AND service_id = ?))").all(businessId, Number(serviceId));
