@@ -5,6 +5,7 @@ const { formatDateTime } = require('../utils/dateFormat');
 const crypto = require('crypto');
 const { sendNewBookingToWorker, sendGuestWelcomeEmail } = require('../services/emailService');
 const { createCalendarEvent } = require('../services/googleCalendarService');
+const { createNotification, notifyAdminAndWorker } = require('../services/notificationService');
 
 const getBusinessInfo = (req, res) => {
   const business = req.business;
@@ -188,6 +189,11 @@ const publicBook = (req, res) => {
     serviceName: appointment.service_name,
     dateTime: formatDateTime(appointment.start_time),
   });
+
+  notifyAdminAndWorker(businessId, appointment.worker_id, 'new_appointment', `תור חדש: ${guestUser.name} - ${appointment.service_name}`);
+  if (wasNewGuest) {
+    createNotification(businessId, 'new_customer', `לקוח חדש נרשם: ${guestUser.name}`, '/admin/customers', null);
+  }
 
   // Send guest welcome + set-password email for new accounts
   if (wasNewGuest) {

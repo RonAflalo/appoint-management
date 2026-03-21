@@ -14,7 +14,7 @@ export default function GoogleSignInButton({ href, label = 'המשך עם Google
   return (
     <a
       href={href}
-      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors shadow-sm"
+      className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl text-sm font-bold text-on-surface hover:bg-surface-container-low transition-colors"
     >
       <GoogleLogo />
       {label}

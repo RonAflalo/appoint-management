@@ -20,6 +20,7 @@ const {
   getRecurringRules, createRecurringRule, updateRecurringRule, deleteRecurringRule,
   getCalendarStatus, disconnectCalendar,
   getAppointmentPhotos, addAppointmentPhoto, deleteAppointmentPhoto,
+  getNotifications, markNotificationsSeen,
 } = require('../controllers/adminController');
 
 router.use(authenticate, authorize('admin'));
@@ -77,6 +78,9 @@ router.delete('/recurring-rules/:id', deleteRecurringRule);
 
 router.get('/me/calendar-status', getCalendarStatus);
 router.post('/me/calendar-disconnect', disconnectCalendar);
+
+router.get('/notifications', getNotifications);
+router.post('/notifications/seen', markNotificationsSeen);
 
 router.post('/ai-chat', async (req, res) => {
   const { messages } = req.body;

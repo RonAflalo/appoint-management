@@ -81,23 +81,23 @@ export default function AdminStore() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">חנות</h1>
-          <p className="text-gray-500 text-sm mt-1">נהל את מוצרי החנות שלך</p>
+          <h1 className="font-headline font-extrabold text-3xl text-on-surface">חנות</h1>
+          <p className="text-on-surface-variant text-sm mt-1">נהל את מוצרי החנות שלך</p>
         </div>
         <div className="flex items-center gap-3">
           {/* Toggle */}
           <button
             onClick={handleToggle}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              storeEnabled ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              storeEnabled ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-zinc-200 text-on-surface-variant hover:bg-zinc-300'
             }`}
           >
-            <span className={`w-3 h-3 rounded-full ${storeEnabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+            <span className={`w-3 h-3 rounded-full ${storeEnabled ? 'bg-green-500' : 'bg-zinc-700'}`} />
             {storeEnabled ? 'חנות פעילה' : 'חנות כבויה'}
           </button>
           <button
             onClick={openNew}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
+            className="primary-gradient text-white px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
           >
             + הוסף מוצר
           </button>
@@ -112,22 +112,22 @@ export default function AdminStore() {
 
       {/* Product form */}
       {showForm && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 shadow-sm">
-          <h2 className="font-semibold text-gray-800 mb-4">{editing ? 'עריכת מוצר' : 'מוצר חדש'}</h2>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5 mb-6">
+          <h2 className="font-semibold text-on-surface mb-4">{editing ? 'עריכת מוצר' : 'מוצר חדש'}</h2>
           <div className="space-y-3">
             <input
               type="text"
               placeholder="שם המוצר *"
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
             />
             <textarea
               placeholder="תיאור המוצר"
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={3}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim resize-none"
             />
             <input
               type="number"
@@ -136,49 +136,49 @@ export default function AdminStore() {
               onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
               min="0"
               step="0.01"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
             />
             {/* Image upload */}
             <div>
-              <label className="block text-xs text-gray-500 mb-1">תמונת מוצר</label>
-              <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="text-sm text-gray-600" />
-              {uploading && <p className="text-xs text-indigo-500 mt-1">מעלה תמונה...</p>}
+              <label className="block text-xs text-on-surface-variant mb-1">תמונת מוצר</label>
+              <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="text-sm text-on-surface-variant" />
+              {uploading && <p className="text-xs text-primary mt-1">מעלה תמונה...</p>}
               {form.image_url && (
-                <img src={form.image_url} alt="preview" className="mt-2 h-24 w-24 object-cover rounded-lg border border-gray-200" />
+                <img src={form.image_url} alt="preview" className="mt-2 h-24 w-24 object-cover rounded-xl border border-outline-variant/20" />
               )}
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={handleSave} disabled={saving} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50">
+            <button onClick={handleSave} disabled={saving} className="primary-gradient text-white px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-opacity">
               {saving ? 'שומר...' : 'שמור'}
             </button>
-            <button onClick={closeForm} className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">ביטול</button>
+            <button onClick={closeForm} className="bg-surface-container text-on-surface-variant px-4 py-2 rounded-xl text-sm hover:bg-surface-container-low transition-colors">ביטול</button>
           </div>
         </div>
       )}
 
       {/* Products list */}
       {products.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400">
-          <p className="text-4xl mb-3">🛍️</p>
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/20 p-12 text-center text-on-surface-variant">
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant/30 block mb-3">storefront</span>
           <p>אין מוצרים עדיין. לחץ על "הוסף מוצר" להתחיל.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map(p => (
-            <div key={p.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div key={p.id} className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
               {p.image_url && (
-                <img src={p.image_url} alt={p.name} className="w-full h-24 object-cover" />
+                <img src={p.image_url} alt={p.name} className="w-full h-36 object-contain bg-surface-container-low" />
               )}
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-gray-900">{p.name}</h3>
-                  <span className="font-bold text-indigo-700 whitespace-nowrap">₪{p.price}</span>
+                  <h3 className="font-semibold text-on-surface">{p.name}</h3>
+                  <span className="font-bold text-primary whitespace-nowrap">₪{p.price}</span>
                 </div>
-                {p.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{p.description}</p>}
+                {p.description && <p className="text-sm text-on-surface-variant mt-1 line-clamp-2">{p.description}</p>}
                 <div className="flex gap-2 mt-3">
-                  <button onClick={() => openEdit(p)} className="flex-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 rounded-lg">עריכה</button>
-                  <button onClick={() => handleDelete(p.id)} className="flex-1 text-sm bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-lg">מחיקה</button>
+                  <button onClick={() => openEdit(p)} className="flex-1 text-sm bg-surface-container text-on-surface-variant hover:bg-surface-container-low py-1.5 rounded-xl transition-colors">עריכה</button>
+                  <button onClick={() => handleDelete(p.id)} className="flex-1 text-sm bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded-xl transition-colors">מחיקה</button>
                 </div>
               </div>
             </div>

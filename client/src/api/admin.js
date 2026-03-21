@@ -52,3 +52,5 @@ export const addAppointmentPhoto = (apptId, file) => {
   return api.post(`/admin/appointments/${apptId}/photos`, form, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
 };
 export const deleteAppointmentPhoto = (apptId, photoId) => api.delete(`/admin/appointments/${apptId}/photos/${photoId}`).then(r => r.data);
+export const getNotifications = () => api.get('/admin/notifications').then(r => r.data);
+export const markNotificationsSeen = () => api.post('/admin/notifications/seen').then(r => r.data);

@@ -104,12 +104,12 @@ export default function AdminRecurringRules() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">תורים קבועים</h1>
-          <p className="text-gray-500 text-sm mt-1">תורים שחוזרים אוטומטית כל שבוע</p>
+          <h1 className="font-headline font-extrabold text-3xl text-on-surface">תורים קבועים</h1>
+          <p className="text-on-surface-variant text-sm mt-1">תורים שחוזרים אוטומטית כל שבוע</p>
         </div>
         <button
           onClick={() => { setShowForm(true); setForm(EMPTY_FORM); }}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors"
+          className="px-4 py-2 primary-gradient text-white rounded-xl text-sm font-bold transition-opacity hover:opacity-90"
         >
           + הוסף כלל חוזר
         </button>
@@ -117,16 +117,16 @@ export default function AdminRecurringRules() {
 
       {/* Add form */}
       {showForm && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">כלל חוזר חדש</h2>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5 mb-6">
+          <h2 className="text-lg font-semibold text-on-surface mb-4">כלל חוזר חדש</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">לקוח *</label>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">לקוח *</label>
                 <select
                   value={form.customer_id}
                   onChange={e => setForm(f => ({ ...f, customer_id: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                 >
                   <option value="">בחר לקוח...</option>
                   {customers.map(c => (
@@ -135,11 +135,11 @@ export default function AdminRecurringRules() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">עובד *</label>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">עובד *</label>
                 <select
                   value={form.worker_id}
                   onChange={e => setForm(f => ({ ...f, worker_id: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                 >
                   <option value="">בחר עובד...</option>
                   {workers.map(w => (
@@ -148,11 +148,11 @@ export default function AdminRecurringRules() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">שירות *</label>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">שירות *</label>
                 <select
                   value={form.service_id}
                   onChange={e => setForm(f => ({ ...f, service_id: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                 >
                   <option value="">בחר שירות...</option>
                   {services.map(s => (
@@ -161,11 +161,11 @@ export default function AdminRecurringRules() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">יום בשבוע *</label>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">יום בשבוע *</label>
                 <select
                   value={form.day_of_week}
                   onChange={e => setForm(f => ({ ...f, day_of_week: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                 >
                   {DAYS_HE.map((day, i) => (
                     <option key={i} value={i}>{day}</option>
@@ -173,30 +173,30 @@ export default function AdminRecurringRules() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">שעה *</label>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">שעה *</label>
                 <input
                   type="time"
                   value={form.time}
                   onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">תאריך התחלה *</label>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">תאריך התחלה *</label>
                 <input
                   type="date"
                   value={form.start_date}
                   onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">תאריך סיום (אופציונלי)</label>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1.5">תאריך סיום (אופציונלי)</label>
                 <input
                   type="date"
                   value={form.end_date}
                   onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                 />
               </div>
             </div>
@@ -204,14 +204,14 @@ export default function AdminRecurringRules() {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg text-sm font-semibold transition-colors"
+                className="px-5 py-2.5 primary-gradient disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-opacity hover:opacity-90"
               >
                 {saving ? 'שומר...' : 'שמור כלל'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                className="px-5 py-2.5 bg-surface-container hover:bg-surface-container-low text-on-surface-variant rounded-xl text-sm font-medium transition-colors"
               >
                 ביטול
               </button>
@@ -222,29 +222,29 @@ export default function AdminRecurringRules() {
 
       {/* Rules list */}
       {rules.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <span className="text-5xl mb-4 block">🔄</span>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">אין כללים חוזרים</h3>
-          <p className="text-gray-500 text-sm">הוסף כלל חוזר לתורים שחוזרים כל שבוע</p>
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/20 p-12 text-center">
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant/30 block mb-4">repeat</span>
+          <h3 className="text-lg font-medium text-on-surface mb-2">אין כללים חוזרים</h3>
+          <p className="text-on-surface-variant text-sm">הוסף כלל חוזר לתורים שחוזרים כל שבוע</p>
         </div>
       ) : (
         <div className="space-y-4">
           {rules.map(rule => (
             <div
               key={rule.id}
-              className={`bg-white rounded-xl shadow-sm border p-5 transition-colors
-                ${rule.is_active ? 'border-gray-100' : 'border-gray-200 opacity-60'}`}
+              className={`bg-surface-container-lowest rounded-2xl shadow-sm border p-5 transition-colors
+                ${rule.is_active ? 'border-outline-variant/20' : 'border-outline-variant/20 opacity-60'}`}
             >
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <div className="font-semibold text-gray-900">{rule.customer_name}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="font-semibold text-on-surface">{rule.customer_name}</div>
+                  <div className="text-sm text-on-surface-variant">
                     {rule.service_name} עם {rule.worker_name}
                   </div>
-                  <div className="text-sm text-indigo-600 font-medium">
+                  <div className="text-sm text-primary font-medium">
                     כל יום {DAYS_HE[rule.day_of_week]} בשעה {rule.time}
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-on-surface-variant/60">
                     מ-{rule.start_date}{rule.end_date ? ` עד ${rule.end_date}` : ' (ללא תאריך סיום)'}
                   </div>
                 </div>
@@ -269,7 +269,7 @@ export default function AdminRecurringRules() {
                 </div>
               </div>
               {!rule.is_active && (
-                <div className="mt-2 text-xs text-gray-400">כלל זה מושבת — לא יוצרו תורים חדשים</div>
+                <div className="mt-2 text-xs text-on-surface-variant/60">כלל זה מושבת — לא יוצרו תורים חדשים</div>
               )}
             </div>
           ))}

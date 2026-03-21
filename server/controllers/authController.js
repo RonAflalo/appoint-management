@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { getDb } = require('../db/database');
 const { sendPasswordResetEmail, sendVerificationEmail } = require('../services/emailService');
+const { createNotification } = require('../services/notificationService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'appointment-super-secret-key-change-in-production';
 const COOKIE_OPTIONS = {
@@ -88,6 +89,10 @@ const register = (req, res) => {
 
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
   sendVerificationEmail({ email, name, verifyUrl: `${clientUrl}/verify-email/${verificationToken}` });
+
+  if (businessId) {
+    createNotification(businessId, 'new_customer', `לקוח חדש נרשם: ${name}`, '/admin/customers');
+  }
 
   let business = null;
   if (user.business_id) {

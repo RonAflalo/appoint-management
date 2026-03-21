@@ -223,10 +223,10 @@ export default function PublicBooking() {
 
   if (loadingBusiness) {
     return (
-      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-surface-container-low">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">טוען...</p>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-on-surface-variant">טוען...</p>
         </div>
       </div>
     );
@@ -234,12 +234,12 @@ export default function PublicBooking() {
 
   if (notFound) {
     return (
-      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center p-8">
           <div className="text-6xl mb-4">😔</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">עסק לא נמצא</h1>
-          <p className="text-gray-500 mb-6">הכתובת שחיפשת אינה קיימת במערכת</p>
-          <Link to="/" className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors">
+          <h1 className="text-2xl font-bold text-on-surface mb-2">עסק לא נמצא</h1>
+          <p className="text-on-surface-variant mb-6">הכתובת שחיפשת אינה קיימת במערכת</p>
+          <Link to="/" className="primary-gradient text-white px-6 py-3 rounded-2xl font-medium transition-opacity hover:opacity-90">
             חזור לדף הבית
           </Link>
         </div>
@@ -249,15 +249,15 @@ export default function PublicBooking() {
 
   if (!loadingBusiness && !notFound && !loadingData && !loadingWorkers && step >= 2 && workers.length === 0) {
     return (
-      <div dir="rtl" className="min-h-screen bg-gray-50">
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
+      <div dir="rtl" className="min-h-screen bg-surface-container-low">
+        <div className="text-white px-4 pt-10 pb-8 text-center" style={{ background: 'linear-gradient(135deg, #3525cd 0%, #712ae2 100%)' }}>
           {business?.logo_url ? (
             <img src={business.logo_url} alt={business.name} className="w-16 h-16 object-contain rounded-xl mx-auto mb-3 bg-white/10 p-1" onError={e => e.target.style.display='none'} />
           ) : (
             <div className="text-4xl mb-3">📅</div>
           )}
           <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
-          {business?.address && <p className="text-indigo-200 text-sm">{business.address}</p>}
+          {business?.address && <p className="text-white/70 text-sm">{business.address}</p>}
           {(business?.phone || business?.instagram_url || business?.facebook_url) && (
             <div className="flex justify-center mt-3">
               <BusinessSocialLinks business={business} variant="light" />
@@ -266,8 +266,8 @@ export default function PublicBooking() {
         </div>
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
           <div className="text-5xl mb-4">🔧</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">העסק עדיין לא מוכן לקביעת תורים</h2>
-          <p className="text-gray-500">בעל העסק טרם הגדיר עובדים. נסה שנית מאוחר יותר.</p>
+          <h2 className="text-xl font-bold text-on-surface mb-2">העסק עדיין לא מוכן לקביעת תורים</h2>
+          <p className="text-on-surface-variant">בעל העסק טרם הגדיר עובדים. נסה שנית מאוחר יותר.</p>
         </div>
       </div>
     );
@@ -285,23 +285,23 @@ export default function PublicBooking() {
       : null;
 
     return (
-      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-background">
         <div className="max-w-md w-full mx-4">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="text-6xl mb-4">✅</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">התור נקבע בהצלחה!</h1>
-            <p className="text-gray-500 mb-2">אימייל אישור נשלח ל-<span className="font-medium text-gray-800">{(user?.role === 'user' ? user.email : null) || guestEmail}</span></p>
-            <div className="bg-indigo-50 rounded-xl p-4 my-6 text-right space-y-2">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-[0_32px_48px_-4px_rgba(25,28,30,0.08)] p-8 text-center">
+            <span className="material-symbols-outlined text-6xl text-emerald-500 mb-4 block">check_circle</span>
+            <h1 className="text-2xl font-bold text-on-surface mb-2">התור נקבע בהצלחה!</h1>
+            <p className="text-on-surface-variant mb-2">אימייל אישור נשלח ל-<span className="font-medium text-on-surface">{(user?.role === 'user' ? user.email : null) || guestEmail}</span></p>
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 my-6 text-right space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">שירות</span>
+                <span className="text-on-surface-variant">שירות</span>
                 <span className="font-semibold">{selectedService?.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">עובד</span>
+                <span className="text-on-surface-variant">עובד</span>
                 <span className="font-semibold">{selectedWorker?.name || 'הקצאה אוטומטית'}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">תאריך ושעה</span>
+                <span className="text-on-surface-variant">תאריך ושעה</span>
                 <span className="font-semibold">{selectedSlot ? formatTime(selectedSlot) : ''} — {selectedDate?.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
               </div>
             </div>
@@ -311,7 +311,7 @@ export default function PublicBooking() {
                   href={calUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full border-2 border-indigo-200 text-indigo-700 py-3 rounded-xl font-medium hover:bg-indigo-50 transition-colors text-sm"
+                  className="flex items-center justify-center gap-2 w-full border-2 border-primary/20 text-primary py-3 rounded-2xl font-medium hover:bg-primary/5 transition-colors text-sm"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                     <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
@@ -321,7 +321,7 @@ export default function PublicBooking() {
               )}
               <Link
                 to="/customer"
-                className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors text-center"
+                className="block w-full primary-gradient text-white py-3 rounded-xl font-medium text-center hover:opacity-90 transition-opacity"
               >
                 עבור לעמוד הלקוח
               </Link>
@@ -334,26 +334,26 @@ export default function PublicBooking() {
 
   if (joinedWaitlist) {
     return (
-      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-background">
         <div className="max-w-md w-full mx-4">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-[0_32px_48px_-4px_rgba(25,28,30,0.08)] p-8 text-center">
             <div className="text-6xl mb-4">⏳</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">נוספת לרשימת המתנה!</h1>
-            <p className="text-gray-500 mb-2">אם השעה תתפנה, נשלח לך אימייל עם קישור לאישור התור.</p>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 my-4 text-right space-y-1">
+            <h1 className="text-2xl font-bold text-on-surface mb-2">נוספת לרשימת המתנה!</h1>
+            <p className="text-on-surface-variant mb-2">אם השעה תתפנה, נשלח לך אימייל עם קישור לאישור התור.</p>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 my-4 text-right space-y-1">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">שירות</span>
+                <span className="text-on-surface-variant">שירות</span>
                 <span className="font-semibold">{selectedService?.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">תאריך ושעה</span>
+                <span className="text-on-surface-variant">תאריך ושעה</span>
                 <span className="font-semibold">{selectedSlot ? formatTime(selectedSlot) : ''} — {selectedDate?.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
               </div>
             </div>
             <p className="text-xs text-amber-700 bg-amber-50 rounded-lg p-3 mb-4">
               ⏰ לאחר קבלת האימייל יהיו לך 30 דקות לאשר את התור — אחרת ייעבר ללקוח הבא בתור
             </p>
-            <Link to="/customer" className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors">
+            <Link to="/customer" className="block w-full primary-gradient text-white py-3 rounded-xl font-medium hover:opacity-90 transition-opacity">
               עבור לעמוד הלקוח
             </Link>
           </div>
@@ -366,7 +366,7 @@ export default function PublicBooking() {
   const hasSocial = business?.phone || business?.instagram_url || business?.facebook_url;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-50">
+    <div dir="rtl" className="min-h-screen bg-surface-container-low">
       {/* Business hero header */}
       {hasCover ? (
         <div>
@@ -392,7 +392,7 @@ export default function PublicBooking() {
             </div>
           </div>
           {/* Social icons + address + CTA */}
-          <div className="bg-white shadow-sm border-b border-gray-100">
+          <div className="bg-surface-container-lowest shadow-sm border-b border-outline-variant/20">
             {hasSocial && (
               <div className="max-w-lg mx-auto px-4 pt-4 pb-1 flex justify-center">
                 <BusinessSocialLinks business={business} variant="dark" />
@@ -402,17 +402,17 @@ export default function PublicBooking() {
               <div className="px-4 py-4 flex flex-col items-center gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="w-full max-w-xs bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-colors shadow"
+                  className="w-full max-w-xs primary-gradient text-white font-bold px-8 py-3 rounded-2xl hover:opacity-90 transition-opacity shadow"
                 >
                   קבע תור עכשיו
                 </button>
                 {isCustomer ? (
-                  <p className="text-gray-400 text-sm">שלום, {user.name} 👋</p>
+                  <p className="text-on-surface-variant text-sm">שלום, {user.name} 👋</p>
                 ) : (
-                  <p className="text-gray-400 text-sm">
-                    <Link to={`/login?redirect=/book/${slug}`} className="underline font-medium text-indigo-600">כניסה</Link>
+                  <p className="text-on-surface-variant text-sm">
+                    <Link to={`/login?redirect=/book/${slug}`} className="text-primary font-bold underline">כניסה</Link>
                     {' '}/{' '}
-                    <Link to={`/register?slug=${slug}`} className="underline font-medium text-indigo-600">הרשמה</Link>
+                    <Link to={`/register?slug=${slug}`} className="text-primary font-bold underline">הרשמה</Link>
                     {' '}לחוויה מהירה יותר
                   </p>
                 )}
@@ -422,16 +422,16 @@ export default function PublicBooking() {
         </div>
       ) : (
         <div>
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white px-4 pt-10 pb-8 text-center">
+          <div className="text-white px-4 pt-10 pb-8 text-center" style={{ background: 'linear-gradient(135deg, #3525cd 0%, #712ae2 100%)' }}>
             {business?.logo_url ? (
               <img src={business.logo_url} alt={business.name} className="w-16 h-16 object-contain rounded-xl mx-auto mb-3 bg-white/10 p-1" onError={e => e.target.style.display='none'} />
             ) : (
               <div className="text-4xl mb-3">📅</div>
             )}
             <h1 className="text-2xl font-black mb-1">{business?.name}</h1>
-            {business?.description && <p className="text-indigo-100 text-sm mt-1 max-w-md mx-auto">{business.description}</p>}
+            {business?.description && <p className="text-white/70 text-sm mt-1 max-w-md mx-auto">{business.description}</p>}
           </div>
-          <div className="bg-white shadow-sm border-b border-gray-100">
+          <div className="bg-surface-container-lowest shadow-sm border-b border-outline-variant/20">
             {hasSocial && (
               <div className="max-w-lg mx-auto px-4 pt-4 pb-1 flex justify-center">
                 <BusinessSocialLinks business={business} variant="dark" />
@@ -441,17 +441,17 @@ export default function PublicBooking() {
               <div className="px-4 py-4 flex flex-col items-center gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="w-full max-w-xs bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-colors shadow"
+                  className="w-full max-w-xs primary-gradient text-white font-bold px-8 py-3 rounded-2xl hover:opacity-90 transition-opacity shadow"
                 >
                   קבע תור עכשיו
                 </button>
                 {isCustomer ? (
-                  <p className="text-gray-400 text-sm">שלום, {user.name} 👋</p>
+                  <p className="text-on-surface-variant text-sm">שלום, {user.name} 👋</p>
                 ) : (
-                  <p className="text-gray-400 text-sm">
-                    <Link to={`/login?redirect=/book/${slug}`} className="underline font-medium text-indigo-600">כניסה</Link>
+                  <p className="text-on-surface-variant text-sm">
+                    <Link to={`/login?redirect=/book/${slug}`} className="text-primary font-bold underline">כניסה</Link>
                     {' '}/{' '}
-                    <Link to={`/register?slug=${slug}`} className="underline font-medium text-indigo-600">הרשמה</Link>
+                    <Link to={`/register?slug=${slug}`} className="text-primary font-bold underline">הרשמה</Link>
                     {' '}לחוויה מהירה יותר
                   </p>
                 )}
@@ -468,41 +468,41 @@ export default function PublicBooking() {
             {STEPS.slice(1).map((s, i) => (
               <div key={i} className="flex items-center flex-shrink-0">
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors
-                  ${i + 1 < step ? 'bg-indigo-600 text-white'
-                    : i + 1 === step ? 'bg-indigo-600 text-white ring-4 ring-indigo-100'
-                    : 'bg-gray-100 text-gray-400'}`}>
+                  ${i + 1 < step ? 'bg-primary text-white'
+                    : i + 1 === step ? 'bg-primary text-white ring-4 ring-primary/20'
+                    : 'bg-surface-container text-on-surface-variant'}`}>
                   {i + 1 < step ? '✓' : i + 1}
                 </div>
                 {i < STEPS.length - 2 && (
-                  <div className={`h-0.5 w-6 mx-1 transition-colors ${i + 1 < step ? 'bg-indigo-600' : 'bg-gray-200'}`}></div>
+                  <div className={`h-0.5 w-6 mx-1 transition-colors ${i + 1 < step ? 'bg-primary' : 'bg-surface-container'}`}></div>
                 )}
               </div>
             ))}
           </div>
 
           {/* Step content */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">{STEPS[step]}</h2>
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/20 p-5 mb-4">
+            <h2 className="text-on-surface text-lg font-headline font-bold mb-4">{STEPS[step]}</h2>
 
             {/* Step 1: Service */}
             {step === 1 && (
               <div className="space-y-3">
                 {loadingData ? (
-                  <div className="text-center py-8 text-gray-400">טוען שירותים...</div>
+                  <div className="text-center py-8 text-on-surface-variant">טוען שירותים...</div>
                 ) : services.map(service => (
                   <button
                     key={service.id}
                     onClick={() => setSelectedService(service)}
                     className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-right
-                      ${selectedService?.id === service.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
+                      ${selectedService?.id === service.id ? 'border-primary bg-primary/10' : 'border-outline-variant/20 hover:border-outline-variant'}`}
                   >
                     <div>
-                      <div className="font-semibold text-gray-900">{service.name}</div>
-                      <div className="text-sm text-gray-500 mt-0.5">{service.duration_minutes} דקות</div>
+                      <div className="font-semibold text-on-surface">{service.name}</div>
+                      <div className="text-sm text-on-surface-variant mt-0.5">{service.duration_minutes} דקות</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-indigo-600">₪{service.price}</div>
-                      {selectedService?.id === service.id && <div className="text-indigo-500">✓</div>}
+                      <div className="text-primary font-bold text-lg">₪{service.price}</div>
+                      {selectedService?.id === service.id && <div className="text-primary">✓</div>}
                     </div>
                   </button>
                 ))}
@@ -514,36 +514,36 @@ export default function PublicBooking() {
               <div className="space-y-3">
                 {loadingWorkers ? (
                   <div className="py-6 flex justify-center">
-                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"></div>
+                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary/20 border-t-primary"></div>
                   </div>
                 ) : (
                   <>
                     <button
                       onClick={() => setSelectedWorker(null)}
                       className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-right
-                        ${selectedWorker === null ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
+                        ${selectedWorker === null ? 'border-primary bg-primary/10' : 'border-outline-variant/20 hover:border-outline-variant'}`}
                     >
-                      <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                      <div className="w-10 h-10 primary-gradient rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                         כ
                       </div>
                       <div>
-                        <div className="font-semibold text-gray-900">כל עובד זמין</div>
-                        <div className="text-sm text-gray-500">הצג שעות זמינות לכל העובדים</div>
+                        <div className="font-semibold text-on-surface">כל עובד זמין</div>
+                        <div className="text-sm text-on-surface-variant">הצג שעות זמינות לכל העובדים</div>
                       </div>
-                      {selectedWorker === null && <span className="mr-auto text-indigo-500 text-lg">✓</span>}
+                      {selectedWorker === null && <span className="mr-auto text-primary text-lg">✓</span>}
                     </button>
                     {workers.map(worker => (
                       <button
                         key={worker.id}
                         onClick={() => setSelectedWorker(worker)}
                         className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-right
-                          ${selectedWorker?.id === worker.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'}`}
+                          ${selectedWorker?.id === worker.id ? 'border-primary bg-primary/10' : 'border-outline-variant/20 hover:border-outline-variant'}`}
                       >
-                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                        <div className="w-10 h-10 bg-secondary/20 text-secondary rounded-full flex items-center justify-center font-bold flex-shrink-0">
                           {worker.name[0]}
                         </div>
-                        <div className="font-semibold text-gray-900">{worker.name}</div>
-                        {selectedWorker?.id === worker.id && <span className="mr-auto text-indigo-500 text-lg">✓</span>}
+                        <div className="font-semibold text-on-surface">{worker.name}</div>
+                        {selectedWorker?.id === worker.id && <span className="mr-auto text-primary text-lg">✓</span>}
                       </button>
                     ))}
                   </>
@@ -560,8 +560,8 @@ export default function PublicBooking() {
                   .unavailable-day abbr { text-decoration: line-through; }
                 `}</style>
                 {loadingDays && (
-                  <p className="text-xs text-gray-400 text-center mb-2 flex items-center justify-center gap-1">
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500"></span>
+                  <p className="text-xs text-on-surface-variant text-center mb-2 flex items-center justify-center gap-1">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-surface-container border-t-on-surface-variant"></span>
                     בודק זמינות ימים...
                   </p>
                 )}
@@ -586,17 +586,17 @@ export default function PublicBooking() {
                   }}
                 />
                 {selectedDate && (
-                  <p className="mt-3 text-sm text-indigo-600 font-medium text-center">
+                  <p className="mt-3 text-sm text-primary font-medium text-center">
                     נבחר: {selectedDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
                 )}
-                <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 justify-center">
+                <div className="mt-3 flex items-center gap-4 text-xs text-on-surface-variant justify-center">
                   <div className="flex items-center gap-1.5">
                     <div className="w-4 h-4 bg-red-100 rounded border border-red-200"></div>
                     <span>אין זמינות</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 bg-white rounded border border-gray-300"></div>
+                    <div className="w-4 h-4 bg-surface-container-lowest rounded border border-outline-variant/20"></div>
                     <span>זמין לתור</span>
                   </div>
                 </div>
@@ -608,13 +608,13 @@ export default function PublicBooking() {
               <div>
                 {loadingSlots ? (
                   <div className="text-center py-8">
-                    <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
                   </div>
                 ) : slots.length === 0 ? (
                   <div className="text-center py-8">
                     <span className="text-4xl mb-3 block">😔</span>
-                    <p className="text-gray-500 font-medium">אין שעות זמינות ביום זה</p>
-                    <button onClick={() => setStep(3)} className="mt-4 text-indigo-600 font-medium text-sm hover:text-indigo-700">
+                    <p className="text-on-surface-variant font-medium">אין שעות זמינות ביום זה</p>
+                    <button onClick={() => setStep(3)} className="mt-4 text-primary font-medium text-sm hover:opacity-80">
                       חזור לבחירת תאריך
                     </button>
                   </div>
@@ -627,11 +627,13 @@ export default function PublicBooking() {
                           key={slot}
                           onClick={() => setSelectedSlot(slot)}
                           className={`py-3 rounded-xl text-sm font-medium transition-all border-2
-                            ${selectedSlot === slot
+                            ${selectedSlot === slot && isTaken
                               ? 'border-red-500 bg-red-500 text-white'
+                              : selectedSlot === slot
+                              ? 'border-primary bg-primary text-white'
                               : isTaken
                               ? 'border-red-200 bg-red-50 text-red-400 hover:bg-red-100'
-                              : 'border-gray-100 hover:border-indigo-300 text-gray-700 hover:bg-indigo-50'
+                              : 'border-outline-variant/20 hover:border-primary text-on-surface hover:bg-primary/5'
                             }`}
                         >
                           {formatTime(slot)}
@@ -647,31 +649,31 @@ export default function PublicBooking() {
             {/* Step 5: Details */}
             {step === 5 && (
               <div className="space-y-4">
-                <div className="bg-indigo-50 rounded-xl p-4 space-y-2">
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">שירות</span>
+                    <span className="text-on-surface-variant">שירות</span>
                     <span className="font-semibold">{selectedService?.name}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">עובד</span>
+                    <span className="text-on-surface-variant">עובד</span>
                     <span className="font-semibold">{selectedWorker?.name || 'הקצאה אוטומטית'}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">תאריך</span>
+                    <span className="text-on-surface-variant">תאריך</span>
                     <span className="font-semibold">{selectedDate?.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">שעה</span>
+                    <span className="text-on-surface-variant">שעה</span>
                     <span className="font-semibold">{selectedSlot ? formatTime(selectedSlot) : ''}</span>
                   </div>
-                  <div className="border-t border-indigo-100 pt-2 flex items-center justify-between text-sm">
-                    <span className="text-gray-500">מחיר</span>
-                    <span className="font-bold text-indigo-600 text-lg">₪{selectedService?.price}</span>
+                  <div className="border-t border-primary/20 pt-2 flex items-center justify-between text-sm">
+                    <span className="text-on-surface-variant">מחיר</span>
+                    <span className="text-primary font-bold text-lg">₪{selectedService?.price}</span>
                   </div>
                 </div>
 
                 {isCustomer ? (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                       {user.name[0]}
                     </div>
@@ -683,53 +685,53 @@ export default function PublicBooking() {
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-700">פרטי ההזמנה</p>
-                      <span className="text-xs text-gray-400">
+                      <p className="text-sm font-medium text-on-surface">פרטי ההזמנה</p>
+                      <span className="text-xs text-on-surface-variant">
                         יש לך חשבון?{' '}
-                        <Link to={`/login?redirect=/book/${slug}`} className="text-indigo-600 font-medium underline">
+                        <Link to={`/login?redirect=/book/${slug}`} className="text-primary font-bold underline">
                           כניסה
                         </Link>
                       </span>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">שם מלא *</label>
+                      <label className="block text-sm font-medium text-on-surface mb-1">שם מלא *</label>
                       <input
                         type="text"
                         value={guestName}
                         onChange={e => setGuestName(e.target.value)}
                         placeholder="ישראל ישראלי"
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">אימייל *</label>
+                      <label className="block text-sm font-medium text-on-surface mb-1">אימייל *</label>
                       <input
                         type="email"
                         value={guestEmail}
                         onChange={e => setGuestEmail(e.target.value)}
                         placeholder="you@example.com"
                         dir="ltr"
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim"
                       />
-                      <p className="text-xs text-gray-400 mt-1">ישלח אישור תור + קישור להגדרת סיסמה</p>
+                      <p className="text-xs text-on-surface-variant mt-1">ישלח אישור תור + קישור להגדרת סיסמה</p>
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">הערות (אופציונלי)</label>
+                  <label className="block text-sm font-semibold text-on-surface mb-1.5">הערות (אופציונלי)</label>
                   <textarea
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
                     placeholder="הוסף הערה..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    className="w-full bg-surface-container-low border-none rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim resize-none"
                   />
                 </div>
                 {business?.terms_enabled && business?.terms_text && (
-                  <div className="border border-gray-200 rounded-xl p-4">
-                    <p className="text-xs font-semibold text-gray-700 mb-2">תנאי שימוש</p>
-                    <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 max-h-32 overflow-y-auto mb-3 whitespace-pre-wrap">
+                  <div className="border border-outline-variant/20 rounded-2xl p-4">
+                    <p className="text-xs font-semibold text-on-surface mb-2">תנאי שימוש</p>
+                    <div className="text-xs text-on-surface-variant bg-surface-container-low rounded-lg p-3 max-h-32 overflow-y-auto mb-3 whitespace-pre-wrap">
                       {business.terms_text}
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -737,9 +739,9 @@ export default function PublicBooking() {
                         type="checkbox"
                         checked={termsAccepted}
                         onChange={e => setTermsAccepted(e.target.checked)}
-                        className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                        className="w-4 h-4 text-primary rounded border-outline-variant/20 focus:ring-primary"
                       />
-                      <span className="text-sm text-gray-700">קראתי ואני מסכים/ה לתנאי השימוש</span>
+                      <span className="text-sm text-on-surface">קראתי ואני מסכים/ה לתנאי השימוש</span>
                     </label>
                   </div>
                 )}
@@ -763,7 +765,7 @@ export default function PublicBooking() {
             {step > 1 && (
               <button
                 onClick={() => setStep(s => s - 1)}
-                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                className="flex-1 py-3 bg-surface-container hover:opacity-80 text-on-surface-variant rounded-xl font-medium transition-opacity"
               >
                 חזור
               </button>
@@ -772,7 +774,7 @@ export default function PublicBooking() {
               <button
                 onClick={goNext}
                 disabled={!canGoNext()}
-                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-200 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
+                className="flex-1 py-3 primary-gradient disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-opacity"
               >
                 המשך
               </button>
@@ -793,7 +795,7 @@ export default function PublicBooking() {
               <button
                 onClick={handleBook}
                 disabled={booking || !canGoNext()}
-                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 primary-gradient disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-opacity flex items-center justify-center gap-2"
               >
                 {booking ? (
                   <>
@@ -809,7 +811,7 @@ export default function PublicBooking() {
 
       {step === 0 && (
         <div className="max-w-lg mx-auto px-4 py-8 text-center">
-          <p className="text-gray-400 text-sm">לחץ על הכפתור למעלה כדי להתחיל בתהליך קביעת התור</p>
+          <p className="text-on-surface-variant text-sm">לחץ על הכפתור למעלה כדי להתחיל בתהליך קביעת התור</p>
         </div>
       )}
     </div>

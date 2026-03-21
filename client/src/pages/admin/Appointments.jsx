@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 import {
   getAppointments, updateAppointmentStatus, getWorkers, requestAdminReschedule,
   getAppointmentPhotos, addAppointmentPhoto, deleteAppointmentPhoto,
@@ -94,7 +96,7 @@ export default function AdminAppointments() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState(() => {
     const params = new URLSearchParams(location.search);
-    return { workerId: '', date: params.get('date') || '', status: '' };
+    return { workerId: '', date: params.get('date') || '', status: params.get('status') || '' };
   });
 
   // Detail modal
@@ -103,6 +105,17 @@ export default function AdminAppointments() {
   const [photosLoading, setPhotosLoading] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = useRef(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const calendarRef = useRef(null);
+
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const handler = (e) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target)) setCalendarOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [calendarOpen]);
 
   // Reschedule modal
   const [rescheduleAppt, setRescheduleAppt] = useState(null);
@@ -232,23 +245,23 @@ export default function AdminAppointments() {
     <div className="flex items-center gap-1.5 flex-wrap" onClick={e => e.stopPropagation()}>
       {appt.status === 'pending' && (
         <>
-          <button onClick={() => handleStatus(appt.id, 'confirmed')} className="px-2.5 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors">אשר</button>
-          <button onClick={(e) => openReschedule(appt, e)} className="px-2.5 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors">שנה מועד</button>
-          <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+          <button onClick={() => handleStatus(appt.id, 'confirmed')} className="px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-xl text-xs font-semibold transition-colors">אשר</button>
+          <button onClick={(e) => openReschedule(appt, e)} className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl text-xs font-semibold transition-colors">שנה מועד</button>
+          <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-error rounded-xl text-xs font-semibold transition-colors">בטל</button>
         </>
       )}
       {appt.status === 'confirmed' && (
         <>
-          <button onClick={() => handleStatus(appt.id, 'completed')} className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors">הושלם</button>
-          <button onClick={(e) => openReschedule(appt, e)} className="px-2.5 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors">שנה מועד</button>
-          <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+          <button onClick={() => handleStatus(appt.id, 'completed')} className="px-3 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl text-xs font-semibold transition-colors">הושלם</button>
+          <button onClick={(e) => openReschedule(appt, e)} className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl text-xs font-semibold transition-colors">שנה מועד</button>
+          <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-error rounded-xl text-xs font-semibold transition-colors">בטל</button>
         </>
       )}
       {appt.status === 'reschedule_requested' && (
-        <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors">בטל</button>
+        <button onClick={() => handleStatus(appt.id, 'cancelled')} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-error rounded-xl text-xs font-semibold transition-colors">בטל</button>
       )}
       {(appt.status === 'completed' || appt.status === 'cancelled') && (
-        <span className="text-xs text-gray-300">—</span>
+        <span className="text-xs text-on-surface-variant opacity-30">—</span>
       )}
     </div>
   );
@@ -257,98 +270,128 @@ export default function AdminAppointments() {
     <div>
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">תורים</h1>
-          <p className="text-gray-500 text-sm mt-1">ניהול כל התורים</p>
+          <h1 className="font-headline font-extrabold text-3xl text-on-surface">תורים</h1>
+          <p className="text-on-surface-variant text-sm mt-1">ניהול כל התורים</p>
         </div>
         {appointments.length > 0 && (
           <div className="flex gap-2">
-            <button onClick={() => exportCSV(appointments)} className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">⬇ CSV</button>
-            <button onClick={() => exportPDF(appointments)} className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">⬇ PDF</button>
+            <button onClick={() => exportCSV(appointments)} className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-lowest border border-outline-variant text-on-surface rounded-xl hover:bg-surface-container-low font-medium text-sm transition-colors shadow-sm">
+              <span className="material-symbols-outlined text-base">download</span> CSV
+            </button>
+            <button onClick={() => exportPDF(appointments)} className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-lowest border border-outline-variant text-on-surface rounded-xl hover:bg-surface-container-low font-medium text-sm transition-colors shadow-sm">
+              <span className="material-symbols-outlined text-base">picture_as_pdf</span> PDF
+            </button>
           </div>
         )}
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <div className="flex flex-wrap gap-3">
-          <select
-            value={filters.workerId}
-            onChange={e => setFilters(p => ({ ...p, workerId: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-          >
-            <option value="">כל העובדים</option>
-            {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
-
-          {/* Date filter with "הכל" placeholder */}
-          <div className="relative inline-flex items-center border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-indigo-500">
-            <span className="px-3 py-2 text-sm text-gray-500 pointer-events-none whitespace-nowrap">
-              {filters.date || 'הכל'}
-            </span>
-            <input
-              type="date"
-              value={filters.date}
-              onChange={e => setFilters(p => ({ ...p, date: e.target.value }))}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full"
-            />
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-4 mb-6 space-y-3">
+        {/* Row 1: Workers + Status */}
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
+            <select
+              value={filters.workerId}
+              onChange={e => setFilters(p => ({ ...p, workerId: e.target.value }))}
+              className="w-full px-3 py-2 border-none rounded-xl text-sm focus:outline-none text-on-surface bg-surface-low-override appearance-none"
+            >
+              <option value="">כל העובדים</option>
+              {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+            <span className="material-symbols-outlined text-sm text-on-surface-variant absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
           </div>
-
-          <select
-            value={filters.status}
-            onChange={e => setFilters(p => ({ ...p, status: e.target.value }))}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-          >
-            {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
-
+          <div className="flex-1 relative">
+            <select
+              value={filters.status}
+              onChange={e => setFilters(p => ({ ...p, status: e.target.value }))}
+              className="w-full px-3 py-2 border-none rounded-xl text-sm focus:outline-none text-on-surface bg-surface-low-override appearance-none"
+            >
+              {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+            <span className="material-symbols-outlined text-sm text-on-surface-variant absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+          </div>
+        </div>
+        {/* Row 2: Date + Clear */}
+        <div className="flex gap-3 items-center">
+          <div className="flex-1 relative" ref={calendarRef}>
+            <button
+              type="button"
+              onClick={() => setCalendarOpen(v => !v)}
+              className="w-full px-3 py-2 bg-surface-container-low rounded-xl text-sm text-on-surface-variant text-right flex items-center justify-between gap-2"
+            >
+              <span>{filters.date ? new Date(filters.date + 'T00:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'כל התאריכים'}</span>
+              <span className="material-symbols-outlined text-base">calendar_month</span>
+            </button>
+            {calendarOpen && (
+              <div className="absolute top-full mt-2 z-50 bg-surface-container-lowest rounded-2xl shadow-xl p-3 border border-outline-variant/20" style={{ minWidth: '300px' }}>
+                <Calendar
+                  onChange={(date) => {
+                    setFilters(p => ({ ...p, date: toDateString(date) }));
+                    setCalendarOpen(false);
+                  }}
+                  value={filters.date ? new Date(filters.date + 'T00:00:00') : null}
+                  locale="he-IL"
+                  className="w-full"
+                />
+                {filters.date && (
+                  <button
+                    onClick={() => { setFilters(p => ({ ...p, date: '' })); setCalendarOpen(false); }}
+                    className="mt-2 w-full py-1.5 text-xs text-on-surface-variant hover:text-error hover:bg-red-50 rounded-xl transition-colors"
+                  >
+                    נקה תאריך
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           {(filters.workerId || filters.date || filters.status) && (
-            <button onClick={clearFilters} className="px-3 py-2 text-gray-500 hover:text-gray-700 text-sm hover:bg-gray-100 rounded-lg transition-colors">
+            <button onClick={clearFilters} className="px-3 py-2 text-on-surface-variant hover:text-on-surface text-sm hover:bg-surface-container rounded-xl transition-colors whitespace-nowrap">
               נקה פילטרים ✕
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-400 mt-2">{appointments.length} תורים מוצגים</p>
+        <p className="text-xs text-on-surface-variant opacity-60">{appointments.length} תורים מוצגים</p>
       </div>
 
       {/* Table */}
       {loading ? (
         <LoadingSpinner />
       ) : appointments.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-12 text-center">
           <span className="text-5xl mb-4 block">📅</span>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">אין תורים</h3>
-          <p className="text-gray-500 text-sm">לא נמצאו תורים התואמים לפילטרים</p>
+          <h3 className="font-headline font-bold text-lg text-on-surface mb-2">אין תורים</h3>
+          <p className="text-on-surface-variant text-sm">לא נמצאו תורים התואמים לפילטרים</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-4 py-3 text-right font-medium text-gray-600">לקוח</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">תאריך ושעה</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">פעולות</th>
+              <tr className="bg-surface-container border-b border-outline-variant/20">
+                <th className="px-3 py-3 text-right font-semibold text-on-surface-variant uppercase text-xs">לקוח</th>
+                <th className="px-3 py-3 text-right font-semibold text-on-surface-variant uppercase text-xs">תאריך ושעה</th>
+                <th className="pl-3 pr-1 py-3 text-right font-semibold text-on-surface-variant uppercase text-xs">פעולות</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-outline-variant/20">
               {appointments.map(appt => (
                 <tr
                   key={appt.id}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="hover:bg-surface-container-low cursor-pointer transition-colors"
                   onClick={() => setDetailAppt(appt)}
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{appt.customer_name}</span>
+                      <span className="font-medium text-on-surface">{appt.customer_name}</span>
                       <StatusBadge status={appt.status} />
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-sm">
+                  <td className="px-3 py-3 text-on-surface-variant whitespace-nowrap text-sm">
                     {formatDateTime(appt.start_time)}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="py-0 pl-2 pr-0">
                     {getMenuItems(appt).length > 0
                       ? <ThreeDotMenu items={getMenuItems(appt)} />
-                      : <span className="text-gray-300 text-sm">—</span>}
+                      : <span className="text-on-surface-variant opacity-30 text-sm px-3">—</span>}
                   </td>
                 </tr>
               ))}
@@ -364,34 +407,34 @@ export default function AdminAppointments() {
             <div className="flex items-center justify-between">
               <StatusBadge status={detailAppt.status} />
               {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
-                <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">
+                <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-xl">
                   מוצע: {formatDateTime(detailAppt.suggested_time)}
                 </span>
               )}
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
-              <p className="text-xs text-gray-400 font-medium uppercase">לקוח</p>
-              <p className="font-semibold text-gray-900">{detailAppt.customer_name}</p>
-              <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_email}</p>
+            <div className="bg-surface-container-low rounded-2xl p-4 space-y-1.5">
+              <p className="text-xs text-on-surface-variant font-medium uppercase">לקוח</p>
+              <p className="font-semibold text-on-surface">{detailAppt.customer_name}</p>
+              <p className="text-sm text-on-surface-variant" dir="ltr">{detailAppt.customer_email}</p>
               {detailAppt.customer_phone && (
-                <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_phone}</p>
+                <p className="text-sm text-on-surface-variant" dir="ltr">{detailAppt.customer_phone}</p>
               )}
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
-              <p className="text-xs text-gray-400 font-medium uppercase">פרטי התור</p>
+            <div className="bg-surface-container-low rounded-2xl p-4 space-y-2.5">
+              <p className="text-xs text-on-surface-variant font-medium uppercase">פרטי התור</p>
               <div className="grid grid-cols-2 gap-y-2.5 text-sm">
-                <div><p className="text-xs text-gray-400">שירות</p><p className="text-gray-900 font-medium">{detailAppt.service_name}</p></div>
-                <div><p className="text-xs text-gray-400">מחיר</p><p className="text-gray-900 font-medium">₪{detailAppt.price}</p></div>
-                <div><p className="text-xs text-gray-400">משך</p><p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p></div>
-                <div><p className="text-xs text-gray-400">עובד</p><p className="text-gray-900 font-medium">{detailAppt.worker_name}</p></div>
-                <div className="col-span-2"><p className="text-xs text-gray-400">תאריך ושעה</p><p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p></div>
+                <div><p className="text-xs text-on-surface-variant">שירות</p><p className="text-on-surface font-medium">{detailAppt.service_name}</p></div>
+                <div><p className="text-xs text-on-surface-variant">מחיר</p><p className="text-on-surface font-medium">₪{detailAppt.price}</p></div>
+                <div><p className="text-xs text-on-surface-variant">משך</p><p className="text-on-surface font-medium">{detailAppt.duration_minutes} דק'</p></div>
+                <div><p className="text-xs text-on-surface-variant">עובד</p><p className="text-on-surface font-medium">{detailAppt.worker_name}</p></div>
+                <div className="col-span-2"><p className="text-xs text-on-surface-variant">תאריך ושעה</p><p className="text-on-surface font-medium">{formatDateTime(detailAppt.start_time)}</p></div>
               </div>
             </div>
 
             {detailAppt.notes && (
-              <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 text-sm text-yellow-800">
+              <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-3 text-sm text-yellow-800">
                 <p className="text-xs text-yellow-600 font-medium mb-1">הערת לקוח</p>
                 {detailAppt.notes}
               </div>
@@ -400,8 +443,8 @@ export default function AdminAppointments() {
             {/* Photos */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-gray-400 font-medium uppercase">תמונות</p>
-                <label className={`text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-colors ${photoUploading ? 'bg-gray-100 text-gray-400' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}>
+                <p className="text-xs text-on-surface-variant font-medium uppercase">תמונות</p>
+                <label className={`text-xs font-medium px-2.5 py-1 rounded-xl cursor-pointer transition-colors ${photoUploading ? 'bg-surface-container text-on-surface-variant' : 'bg-primary-fixed text-primary hover:opacity-80'}`}>
                   {photoUploading ? 'מעלה...' : '+ הוסף תמונה'}
                   <input
                     ref={photoInputRef}
@@ -414,14 +457,14 @@ export default function AdminAppointments() {
                 </label>
               </div>
               {photosLoading ? (
-                <div className="text-xs text-gray-400 py-2">טוען תמונות...</div>
+                <div className="text-xs text-on-surface-variant opacity-60 py-2">טוען תמונות...</div>
               ) : apptPhotos.length === 0 ? (
-                <div className="text-xs text-gray-300 py-2">אין תמונות</div>
+                <div className="text-xs text-on-surface-variant opacity-40 py-2">אין תמונות</div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {apptPhotos.map(photo => (
                     <div key={photo.id} className="relative group">
-                      <img src={photo.url} alt="" className="w-full h-20 object-cover rounded-lg border border-gray-200" />
+                      <img src={photo.url} alt="" className="w-full h-20 object-cover rounded-xl border border-outline-variant/20" />
                       <button
                         onClick={() => handleDeletePhoto(photo.id)}
                         className="absolute top-1 left-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -445,25 +488,25 @@ export default function AdminAppointments() {
       <Modal isOpen={!!rescheduleAppt} onClose={() => setRescheduleAppt(null)} title="בקשת שינוי מועד">
         {rescheduleAppt && (
           <form onSubmit={handleReschedule} className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-              <div>{rescheduleAppt.customer_name} — {rescheduleAppt.service_name}</div>
-              <div className="text-xs text-gray-400 mt-0.5">מועד נוכחי: {formatDateTime(rescheduleAppt.start_time)}</div>
+            <div className="bg-surface-container-low rounded-2xl p-4 text-sm text-on-surface-variant">
+              <div className="text-on-surface">{rescheduleAppt.customer_name} — {rescheduleAppt.service_name}</div>
+              <div className="text-xs text-on-surface-variant opacity-70 mt-0.5">מועד נוכחי: {formatDateTime(rescheduleAppt.start_time)}</div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">תאריך חדש מוצע</label>
-              <input type="date" value={rescheduleDate} min={toDateString(new Date())} onChange={e => setRescheduleDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+              <label className="block text-sm font-medium text-on-surface mb-1">תאריך חדש מוצע</label>
+              <input type="date" value={rescheduleDate} min={toDateString(new Date())} onChange={e => setRescheduleDate(e.target.value)} className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim text-on-surface" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">שעה חדשה מוצעת</label>
-              <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+              <label className="block text-sm font-medium text-on-surface mb-1">שעה חדשה מוצעת</label>
+              <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim text-on-surface" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">הערה ללקוח (אופציונלי)</label>
-              <textarea value={rescheduleNote} onChange={e => setRescheduleNote(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="סיבה לשינוי..." />
+              <label className="block text-sm font-medium text-on-surface mb-1">הערה ללקוח (אופציונלי)</label>
+              <textarea value={rescheduleNote} onChange={e => setRescheduleNote(e.target.value)} rows={2} className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim resize-none text-on-surface" placeholder="סיבה לשינוי..." />
             </div>
             <div className="flex gap-3 pt-1">
-              <button type="submit" disabled={submitting} className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg text-sm font-medium transition-colors">{submitting ? 'שולח...' : 'שלח בקשה ללקוח'}</button>
-              <button type="button" onClick={() => setRescheduleAppt(null)} className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">ביטול</button>
+              <button type="submit" disabled={submitting} className="flex-1 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl text-sm font-semibold transition-colors">{submitting ? 'שולח...' : 'שלח בקשה ללקוח'}</button>
+              <button type="button" onClick={() => setRescheduleAppt(null)} className="flex-1 py-2 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold transition-colors">ביטול</button>
             </div>
           </form>
         )}

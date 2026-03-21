@@ -174,20 +174,20 @@ export default function WorkerAppointments() {
     <div className="flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
       {appt.status === 'pending' && (
         <>
-          <button onClick={() => handleApprove(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">{busy === appt.id ? '...' : 'אשר'}</button>
-          <button onClick={(e) => openRescheduleModal(appt, e)} disabled={busy === appt.id} className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">שנה מועד</button>
-          <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">בטל</button>
+          <button onClick={() => handleApprove(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50">{busy === appt.id ? '...' : 'אשר'}</button>
+          <button onClick={(e) => openRescheduleModal(appt, e)} disabled={busy === appt.id} className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50">שנה מועד</button>
+          <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-error rounded-xl text-xs font-semibold transition-colors disabled:opacity-50">בטל</button>
         </>
       )}
       {appt.status === 'confirmed' && (
         <>
-          <button onClick={() => handleComplete(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">הושלם</button>
-          <button onClick={(e) => openRescheduleModal(appt, e)} disabled={busy === appt.id} className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">שנה מועד</button>
-          <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">בטל</button>
+          <button onClick={() => handleComplete(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl text-xs font-semibold transition-colors disabled:opacity-50">הושלם</button>
+          <button onClick={(e) => openRescheduleModal(appt, e)} disabled={busy === appt.id} className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50">שנה מועד</button>
+          <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-error rounded-xl text-xs font-semibold transition-colors disabled:opacity-50">בטל</button>
         </>
       )}
       {appt.status === 'reschedule_requested' && (
-        <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-medium transition-colors disabled:opacity-50">בטל תור</button>
+        <button onClick={() => handleCancel(appt.id)} disabled={busy === appt.id} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-error rounded-xl text-xs font-semibold transition-colors disabled:opacity-50">בטל תור</button>
       )}
     </div>
   );
@@ -195,62 +195,64 @@ export default function WorkerAppointments() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">התורים שלי</h1>
-        <p className="text-gray-500 text-sm mt-1">ניהול התורים שלך</p>
+        <h1 className="font-headline font-extrabold text-3xl text-on-surface">התורים שלי</h1>
+        <p className="text-on-surface-variant text-sm mt-1">ניהול התורים שלך</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 overflow-x-auto">
-        {TABS.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
-            className={`flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-              ${activeTab === tab.value
-                ? 'bg-white text-emerald-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'}`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Status filter */}
+      <div className="mb-6 relative w-48">
+        <select
+          value={activeTab}
+          onChange={e => setActiveTab(e.target.value)}
+          className="w-full appearance-none pl-8 pr-3 py-2 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+          style={{ backgroundColor: '#f2f4f6' }}
+        >
+          {TABS.map(tab => (
+            <option key={tab.value} value={tab.value}>{tab.label}</option>
+          ))}
+        </select>
+        <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-lg">expand_more</span>
       </div>
 
       {loading ? (
         <LoadingSpinner />
       ) : appointments.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+        <div className="bg-surface-container-lowest rounded-2xl border-outline-variant/20 p-12 text-center">
           <span className="text-5xl mb-4 block">📋</span>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">אין תורים</h3>
-          <p className="text-gray-500 text-sm">לא נמצאו תורים בקטגוריה זו</p>
+          <h3 className="text-lg font-medium text-on-surface mb-2">אין תורים</h3>
+          <p className="text-on-surface-variant text-sm">לא נמצאו תורים בקטגוריה זו</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-4 py-3 text-right font-medium text-gray-600">לקוח</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">תאריך ושעה</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">פעולות</th>
+              <tr className="bg-surface-container-low border-b border-outline-variant/20">
+                <th className="px-4 py-3 text-right font-medium text-on-surface-variant">לקוח</th>
+                <th className="px-4 py-3 text-right font-medium text-on-surface-variant">תאריך</th>
+                <th className="pl-3 pr-1 py-3 text-left font-medium text-on-surface-variant">פעולות</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-outline-variant/20">
               {appointments.map(appt => (
                 <tr
                   key={appt.id}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="hover:bg-surface-container-low cursor-pointer transition-colors"
                   onClick={() => setDetailAppt(appt)}
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{appt.customer_name}</span>
+                      <span className="font-medium text-on-surface">{appt.customer_name}</span>
                       <StatusBadge status={appt.status} />
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-sm">
-                    {formatDateTime(appt.start_time)}
+                  <td className="px-3 py-3 w-px">
+                    <div className="text-sm text-on-surface whitespace-nowrap">{appt.start_time.slice(0, 10)}</div>
+                    <div className="text-xs text-on-surface-variant whitespace-nowrap">{appt.start_time.slice(11, 16)}</div>
                   </td>
-                  <td className="px-4 py-3">
-                    <ThreeDotMenu items={getMenuItems(appt)} />
+                  <td className="py-0 pl-2 pr-0">
+                    <div className="flex justify-end">
+                      <ThreeDotMenu items={getMenuItems(appt)} />
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -266,33 +268,33 @@ export default function WorkerAppointments() {
             <div className="flex items-center justify-between">
               <StatusBadge status={detailAppt.status} />
               {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
-                <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">
+                <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-xl">
                   מוצע: {formatDateTime(detailAppt.suggested_time)}
                 </span>
               )}
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
-              <p className="text-xs text-gray-400 font-medium uppercase">לקוח</p>
-              <p className="font-semibold text-gray-900">{detailAppt.customer_name}</p>
-              <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_email}</p>
+            <div className="bg-surface-container-low rounded-2xl p-4 space-y-1.5">
+              <p className="text-xs text-on-surface-variant font-medium uppercase">לקוח</p>
+              <p className="font-semibold text-on-surface">{detailAppt.customer_name}</p>
+              <p className="text-sm text-on-surface-variant" dir="ltr">{detailAppt.customer_email}</p>
               {detailAppt.customer_phone && (
-                <p className="text-sm text-gray-500" dir="ltr">{detailAppt.customer_phone}</p>
+                <p className="text-sm text-on-surface-variant" dir="ltr">{detailAppt.customer_phone}</p>
               )}
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
-              <p className="text-xs text-gray-400 font-medium uppercase">פרטי התור</p>
+            <div className="bg-surface-container-low rounded-2xl p-4 space-y-2.5">
+              <p className="text-xs text-on-surface-variant font-medium uppercase">פרטי התור</p>
               <div className="grid grid-cols-2 gap-y-2.5 text-sm">
-                <div><p className="text-xs text-gray-400">שירות</p><p className="text-gray-900 font-medium">{detailAppt.service_name}</p></div>
-                <div><p className="text-xs text-gray-400">מחיר</p><p className="text-gray-900 font-medium">₪{detailAppt.price}</p></div>
-                <div className="col-span-2"><p className="text-xs text-gray-400">תאריך ושעה</p><p className="text-gray-900 font-medium">{formatDateTime(detailAppt.start_time)}</p></div>
-                <div className="col-span-2"><p className="text-xs text-gray-400">משך</p><p className="text-gray-900 font-medium">{detailAppt.duration_minutes} דק'</p></div>
+                <div><p className="text-xs text-on-surface-variant">שירות</p><p className="text-on-surface font-medium">{detailAppt.service_name}</p></div>
+                <div><p className="text-xs text-on-surface-variant">מחיר</p><p className="text-on-surface font-medium">₪{detailAppt.price}</p></div>
+                <div className="col-span-2"><p className="text-xs text-on-surface-variant">תאריך ושעה</p><p className="text-on-surface font-medium">{formatDateTime(detailAppt.start_time)}</p></div>
+                <div className="col-span-2"><p className="text-xs text-on-surface-variant">משך</p><p className="text-on-surface font-medium">{detailAppt.duration_minutes} דק'</p></div>
               </div>
             </div>
 
             {detailAppt.status === 'reschedule_requested' && detailAppt.suggested_time && (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm">
+              <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 text-sm">
                 <p className="font-medium text-orange-800 mb-1">⏰ בקשת שינוי מועד נשלחה ללקוח</p>
                 <p className="text-orange-700">זמן מוצע: {formatDateTime(detailAppt.suggested_time)}</p>
                 {detailAppt.reschedule_note && (
@@ -302,7 +304,7 @@ export default function WorkerAppointments() {
             )}
 
             {detailAppt.notes && (
-              <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 text-sm text-yellow-800">
+              <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-3 text-sm text-yellow-800">
                 <p className="text-xs text-yellow-600 font-medium mb-1">הערת לקוח</p>
                 {detailAppt.notes}
               </div>
@@ -311,8 +313,8 @@ export default function WorkerAppointments() {
             {/* Photos */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-gray-400 font-medium uppercase">תמונות</p>
-                <label className={`text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-colors ${photoUploading ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}>
+                <p className="text-xs text-on-surface-variant font-medium uppercase">תמונות</p>
+                <label className={`text-xs font-medium px-2.5 py-1 rounded-xl cursor-pointer transition-colors ${photoUploading ? 'bg-surface-container text-on-surface-variant' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}>
                   {photoUploading ? 'מעלה...' : '+ הוסף תמונה'}
                   <input
                     ref={photoInputRef}
@@ -325,14 +327,14 @@ export default function WorkerAppointments() {
                 </label>
               </div>
               {photosLoading ? (
-                <div className="text-xs text-gray-400 py-2">טוען תמונות...</div>
+                <div className="text-xs text-on-surface-variant py-2">טוען תמונות...</div>
               ) : apptPhotos.length === 0 ? (
-                <div className="text-xs text-gray-300 py-2">אין תמונות</div>
+                <div className="text-xs text-on-surface-variant/50 py-2">אין תמונות</div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {apptPhotos.map(photo => (
                     <div key={photo.id} className="relative group">
-                      <img src={photo.url} alt="" className="w-full h-20 object-cover rounded-lg border border-gray-200" />
+                      <img src={photo.url} alt="" className="w-full h-20 object-cover rounded-xl border border-outline-variant/20" />
                       <button
                         onClick={() => handleDeletePhoto(photo.id)}
                         className="absolute top-1 left-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -356,29 +358,29 @@ export default function WorkerAppointments() {
       <Modal isOpen={rescheduleModal} onClose={() => setRescheduleModal(false)} title="בקשת שינוי מועד">
         {rescheduleAppt && (
           <form onSubmit={handleRescheduleSubmit} className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-              <div className="font-medium text-gray-800 mb-1">{rescheduleAppt.customer_name}</div>
+            <div className="bg-surface-container-low rounded-2xl p-3 text-sm text-on-surface-variant">
+              <div className="font-medium text-on-surface mb-1">{rescheduleAppt.customer_name}</div>
               <div>{rescheduleAppt.service_name} — {formatDateTime(rescheduleAppt.start_time)}</div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">תאריך מוצע</label>
-              <input type="date" value={suggestedDate} onChange={e => setSuggestedDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" required />
+              <label className="block text-sm font-medium text-on-surface-variant mb-1.5">תאריך מוצע</label>
+              <input type="date" value={suggestedDate} onChange={e => setSuggestedDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim" required />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">שעה מוצעת</label>
-              <input type="time" value={suggestedTime} onChange={e => setSuggestedTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" required />
+              <label className="block text-sm font-medium text-on-surface-variant mb-1.5">שעה מוצעת</label>
+              <input type="time" value={suggestedTime} onChange={e => setSuggestedTime(e.target.value)} className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim" required />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">הערה ללקוח (אופציונלי)</label>
-              <textarea value={rescheduleNote} onChange={e => setRescheduleNote(e.target.value)} placeholder="למשל: נא לאשר עד מחר..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+              <label className="block text-sm font-medium text-on-surface-variant mb-1.5">הערה ללקוח (אופציונלי)</label>
+              <textarea value={rescheduleNote} onChange={e => setRescheduleNote(e.target.value)} placeholder="למשל: נא לאשר עד מחר..." rows={2} className="w-full px-3 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim resize-none" />
             </div>
 
             <div className="flex gap-3 pt-1">
-              <button type="submit" disabled={submittingReschedule} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg text-sm font-semibold transition-colors">{submittingReschedule ? 'שולח...' : 'שלח ללקוח'}</button>
-              <button type="button" onClick={() => setRescheduleModal(false)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">ביטול</button>
+              <button type="submit" disabled={submittingReschedule} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl text-sm font-bold transition-colors">{submittingReschedule ? 'שולח...' : 'שלח ללקוח'}</button>
+              <button type="button" onClick={() => setRescheduleModal(false)} className="flex-1 py-2.5 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl text-sm font-medium transition-colors">ביטול</button>
             </div>
           </form>
         )}

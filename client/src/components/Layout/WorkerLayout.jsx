@@ -3,11 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { logout } from '../../api/auth';
+import NotificationBell from '../admin/NotificationBell';
+import { getWorkerNotifications, markWorkerNotificationsSeen } from '../../api/worker';
 
 const navItems = [
-  { path: '/worker', label: 'לוח זמנים', icon: '📅', exact: true },
-  { path: '/worker/appointments', label: 'התורים שלי', icon: '📋' },
-  { path: '/worker/availability', label: 'זמינות', icon: '🕐' },
+  { path: '/worker', label: 'לוח זמנים', icon: 'grid_view', exact: true },
+  { path: '/worker/appointments', label: 'התורים שלי', icon: 'event' },
+  { path: '/worker/availability', label: 'זמינות', icon: 'schedule' },
 ];
 
 export default function WorkerLayout({ children }) {
@@ -18,48 +20,56 @@ export default function WorkerLayout({ children }) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (e) {
-      // ignore
-    }
+    try { await logout(); } catch (_) {}
     setUser(null);
     navigate('/login');
     addToast('התנתקת בהצלחה');
   };
 
-  const isActive = (item) => {
-    if (item.exact) return location.pathname === item.path;
-    return location.pathname.startsWith(item.path);
-  };
+  const isActive = (item) =>
+    item.exact ? location.pathname === item.path : location.pathname.startsWith(item.path);
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-emerald-900 text-white w-64">
-      <div className="p-6 border-b border-emerald-800">
-        <h1 className="text-xl font-bold">מנהל תורים</h1>
-        <p className="text-emerald-300 text-sm mt-1">{user?.name}</p>
-        <span className="inline-block mt-1 text-xs bg-emerald-700 text-emerald-200 px-2 py-0.5 rounded-full">עובד</span>
+    <div className="flex flex-col h-full bg-surface-container-lowest w-64 rounded-l-3xl overflow-hidden">
+      <div className="p-6 border-b border-outline-variant/20">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl primary-gradient flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-white text-lg">event_available</span>
+          </div>
+          <div>
+            <h1 className="font-headline font-extrabold text-base text-primary leading-none">{user?.business?.name || 'תוריי'}</h1>
+            <p className="text-xs text-on-surface-variant mt-0.5">{user?.name}</p>
+          </div>
+        </div>
+        <span className="inline-block mt-3 text-xs bg-secondary/10 text-secondary px-2.5 py-0.5 rounded-full font-semibold">עובד</span>
       </div>
-      <nav className="flex-1 p-4 space-y-1">
+
+      <nav className="flex-1 p-3 space-y-0.5">
         {navItems.map(item => (
           <Link
             key={item.path}
             to={item.path}
             onClick={() => setSidebarOpen(false)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium
-              ${isActive(item) ? 'bg-emerald-700 text-white' : 'text-emerald-200 hover:bg-emerald-800'}`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-all text-sm font-medium
+              ${isActive(item)
+                ? 'bg-primary/10 text-primary font-semibold'
+                : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`}
           >
-            <span className="text-base">{item.icon}</span>
+            <span className="material-symbols-outlined text-xl"
+              style={isActive(item) ? { fontVariationSettings: "'FILL' 1" } : {}}>
+              {item.icon}
+            </span>
             {item.label}
           </Link>
         ))}
       </nav>
-      <div className="p-4 border-t border-emerald-800">
+
+      <div className="p-3 border-t border-outline-variant/20">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-4 py-3 text-emerald-200 hover:bg-emerald-800 rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2.5 text-on-surface-variant hover:bg-red-50 hover:text-error rounded-full text-sm font-medium transition-colors"
         >
-          <span>🚪</span>
+          <span className="material-symbols-outlined text-xl">logout</span>
           יציאה
         </button>
       </div>
@@ -67,32 +77,29 @@ export default function WorkerLayout({ children }) {
   );
 
   return (
-    <div className="flex h-screen bg-gray-50" dir="rtl">
-      {/* Desktop sidebar (right side) */}
-      <aside className="hidden lg:flex flex-col border-l border-gray-200 shadow-lg flex-shrink-0">
+    <div className="flex h-screen bg-surface-container" dir="rtl">
+      <aside className="hidden lg:flex flex-col flex-shrink-0 my-3 ml-3 shadow-sm">
         <SidebarContent />
       </aside>
 
-      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <div className="absolute right-0 top-0 h-full z-50 shadow-xl">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute right-0 top-0 h-full z-50 shadow-2xl">
             <SidebarContent />
           </div>
         </div>
       )}
 
-      {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile header */}
-        <header className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-          <h1 className="font-bold text-emerald-900">מנהל תורים</h1>
-          <button onClick={() => setSidebarOpen(true)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-            <span className="text-xl">☰</span>
+        <header className="lg:hidden fixed top-0 left-0 right-0 z-30 glass-header border-b border-outline-variant/20 flex items-center px-4 py-3">
+          <button onClick={() => setSidebarOpen(true)} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-xl transition-colors flex-shrink-0">
+            <span className="material-symbols-outlined">menu</span>
           </button>
+          <span className="font-headline font-extrabold text-primary flex-1 text-center">{user?.business?.name || 'תוריי'}</span>
+          <NotificationBell getNotifsFn={getWorkerNotifications} markSeenFn={markWorkerNotificationsSeen} />
         </header>
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 lg:pt-6 pt-20">
+        <div className="flex-1 overflow-y-auto p-4 pt-20 lg:pt-4">
           {children}
         </div>
       </main>

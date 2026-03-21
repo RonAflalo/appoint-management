@@ -13,6 +13,8 @@ const {
   getAppointmentPhotos,
   addAppointmentPhoto,
   deleteAppointmentPhoto,
+  getWorkerNotifications,
+  markWorkerNotificationsSeen,
 } = require('../controllers/workerController');
 
 router.use(authenticate, authorize('worker'));
@@ -27,5 +29,8 @@ router.post('/appointments/:id/photos', upload.single('image'), addAppointmentPh
 router.delete('/appointments/:id/photos/:photoId', deleteAppointmentPhoto);
 router.get('/availability', getAvailability);
 router.post('/availability', setAvailability);
+
+router.get('/notifications', getWorkerNotifications);
+router.post('/notifications/seen', markWorkerNotificationsSeen);
 
 module.exports = router;

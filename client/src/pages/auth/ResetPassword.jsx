@@ -29,62 +29,86 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-4" dir="rtl">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4 shadow-lg">
-            <span className="text-3xl">📅</span>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6" dir="rtl">
+      {/* Decorative blobs */}
+      <div className="fixed -top-20 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="fixed -bottom-20 -left-20 w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none -z-10" />
+
+      <div className="w-full max-w-[440px] flex flex-col gap-8">
+        {/* Header */}
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 rounded-2xl primary-gradient flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
+            <span className="material-symbols-outlined text-white text-3xl">lock_reset</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">תוריי</h1>
-          <p className="text-gray-500 mt-2">איפוס סיסמה</p>
+          <div>
+            <h1 className="font-headline font-extrabold text-4xl tracking-tight text-on-surface">איפוס סיסמה</h1>
+            <p className="text-on-surface-variant mt-2">הגדר סיסמה חדשה לחשבונך</p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        {/* Card */}
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_32px_48px_-4px_rgba(25,28,30,0.08)] p-8 flex flex-col gap-6">
           {done ? (
-            <div className="text-center">
-              <div className="text-5xl mb-4">✅</div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">הסיסמה אופסה בהצלחה!</h2>
-              <p className="text-gray-500 text-sm">מועבר לדף הכניסה...</p>
+            <div className="flex flex-col items-center text-center gap-4 py-4">
+              <span className="material-symbols-outlined text-primary text-5xl">check_circle</span>
+              <div>
+                <h2 className="text-lg font-headline font-bold text-on-surface mb-2">הסיסמה אופסה בהצלחה!</h2>
+                <p className="text-on-surface-variant text-sm">מועבר לדף הכניסה...</p>
+              </div>
             </div>
           ) : (
             <>
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+                <div className="p-3 bg-error-container border border-red-200 rounded-xl text-error text-sm font-medium">
+                  {error}
+                </div>
               )}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">סיסמה חדשה</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="לפחות 6 תווים"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                  />
+
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                {/* New Password */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-on-surface-variant pr-1">סיסמה חדשה</label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="לפחות 6 תווים"
+                      className="w-full px-5 py-3.5 pl-11 bg-surface-container-low border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim text-on-surface placeholder:text-outline/50 transition-all"
+                    />
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/40 text-xl">lock</span>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">אימות סיסמה</label>
-                  <input
-                    type="password"
-                    value={confirm}
-                    onChange={e => setConfirm(e.target.value)}
-                    placeholder="הזן שוב את הסיסמה"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                  />
+
+                {/* Confirm Password */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-on-surface-variant pr-1">אימות סיסמה</label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={confirm}
+                      onChange={e => setConfirm(e.target.value)}
+                      placeholder="הזן שוב את הסיסמה"
+                      className="w-full px-5 py-3.5 pl-11 bg-surface-container-low border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim text-on-surface placeholder:text-outline/50 transition-all"
+                    />
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/40 text-xl">lock</span>
+                  </div>
                 </div>
+
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+                  className="w-full py-3.5 primary-gradient text-white font-headline font-bold text-base rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>מאפס...</>
+                    <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> מאפס...</>
                   ) : 'אפס סיסמה'}
                 </button>
               </form>
-              <div className="mt-5 text-center text-sm">
-                <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">חזרה להתחברות</Link>
-              </div>
+
+              <p className="text-center text-sm text-on-surface-variant">
+                <Link to="/login" className="text-primary font-bold hover:underline">חזרה להתחברות</Link>
+              </p>
             </>
           )}
         </div>

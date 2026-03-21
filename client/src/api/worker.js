@@ -13,3 +13,5 @@ export const addWorkerApptPhoto = (apptId, file) => {
   return api.post(`/worker/appointments/${apptId}/photos`, form, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
 };
 export const deleteWorkerApptPhoto = (apptId, photoId) => api.delete(`/worker/appointments/${apptId}/photos/${photoId}`).then(r => r.data);
+export const getWorkerNotifications = () => api.get('/worker/notifications').then(r => r.data);
+export const markWorkerNotificationsSeen = () => api.post('/worker/notifications/seen').then(r => r.data);

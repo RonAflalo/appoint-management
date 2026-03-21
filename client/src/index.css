@@ -3,7 +3,27 @@
 @tailwind utilities;
 
 * {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Inter', 'Heebo', sans-serif;
+}
+
+@layer base {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
+  }
 }
 
 /* Prevent iOS auto-zoom on input focus */
@@ -14,32 +34,98 @@ input, select, textarea {
 body {
   direction: rtl;
   text-align: right;
+  background-color: #eceef0;
+  color: #191c1e;
+}
+
+/* ── Guaranteed surface utility classes (Tailwind custom token fallback) ── */
+.bg-background        { background-color: #f7f9fb; }
+.bg-surface-container-lowest { background-color: #ffffff; }
+.bg-surface-container-low    { background-color: #f2f4f6; }
+.bg-surface-container        { background-color: #eceef0; }
+.bg-surface-container-high   { background-color: #e6e8ea; }
+
+.text-on-surface         { color: #191c1e; }
+.text-on-surface-variant { color: #464555; }
+.text-primary            { color: #3525cd; }
+.text-secondary          { color: #712ae2; }
+.text-error              { color: #ba1a1a; }
+
+.border-outline-variant  { border-color: #c7c4d8; }
+
+/* Input fields on white cards — visible medium-gray fill */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  background-color: #e6e8ea !important;
+  border: none !important;
+  border-radius: 0.75rem;
+  transition: background-color 0.15s;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+select:focus,
+textarea:focus {
+  background-color: #ffffff !important;
+  outline: none;
+  box-shadow: 0 0 0 2px #c3c0ff;
+}
+
+/* Filter input background override */
+.bg-surface-low-override {
+  background-color: #f2f4f6 !important;
+}
+
+/* Primary gradient utility */
+.primary-gradient {
+  background: linear-gradient(135deg, #3525cd 0%, #4f46e5 100%);
+}
+
+/* Glass effect */
+.glass-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 /* React Calendar RTL overrides */
 .react-calendar {
   direction: rtl;
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Inter', 'Heebo', sans-serif;
   width: 100%;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
+  background: transparent;
 }
 
 .react-calendar__navigation button {
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Inter', 'Heebo', sans-serif;
+  font-weight: 600;
+  border-radius: 0.5rem;
 }
 
 .react-calendar__tile--active {
-  background: #6366f1 !important;
-  border-radius: 0.375rem;
+  background: #3525cd !important;
+  border-radius: 0.5rem;
+  color: white !important;
 }
 
 .react-calendar__tile--now {
-  background: #e0e7ff;
-  border-radius: 0.375rem;
+  background: #e2dfff;
+  border-radius: 0.5rem;
 }
 
 .react-calendar__tile:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
+  background-color: #f2f4f6;
+  color: #c7c4d8;
+}
+
+.react-calendar__tile:enabled:hover {
+  background: #f2f4f6;
+  border-radius: 0.5rem;
+}
+
+/* Status dot pulse animation */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }

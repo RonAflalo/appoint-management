@@ -15,15 +15,15 @@ function formatMonth(yyyymm) {
   return `${MONTH_NAMES[m]} ${y}`;
 }
 
-function Bar({ value, max, color = 'bg-indigo-500', label }) {
+function Bar({ value, max, color = 'bg-primary', label }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="w-12 text-gray-500 text-xs text-left flex-shrink-0">{label}</span>
-      <div className="flex-1 bg-gray-100 rounded-full h-3">
+      <span className="w-12 text-on-surface-variant text-xs text-left flex-shrink-0">{label}</span>
+      <div className="flex-1 bg-surface-container rounded-full h-3">
         <div className={`${color} h-3 rounded-full transition-all`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="w-8 text-gray-700 text-xs text-right flex-shrink-0">{value}</span>
+      <span className="w-8 text-on-surface text-xs text-right flex-shrink-0">{value}</span>
     </div>
   );
 }
@@ -57,40 +57,48 @@ export default function AdminAnalytics() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">אנליטיקה</h1>
-        <p className="text-gray-500 text-sm mt-1">נתוני ביצועים של העסק</p>
+        <h1 className="font-headline font-extrabold text-3xl text-on-surface">אנליטיקה</h1>
+        <p className="text-on-surface-variant text-sm mt-1">נתוני ביצועים של העסק</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="text-2xl mb-1">💰</div>
-          <div className="text-2xl font-bold text-gray-900">₪{Math.round(totals?.total_revenue || 0).toLocaleString()}</div>
-          <div className="text-sm text-gray-500 mt-1">הכנסות סה"כ</div>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-6">
+          <div className="mb-3">
+            <span className="material-symbols-outlined text-2xl p-2 rounded-xl text-green-600 bg-green-50">payments</span>
+          </div>
+          <div className="text-2xl font-bold text-on-surface">₪{Math.round(totals?.total_revenue || 0).toLocaleString()}</div>
+          <div className="text-sm text-on-surface-variant mt-1">הכנסות סה"כ</div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="text-2xl mb-1">📅</div>
-          <div className="text-2xl font-bold text-gray-900">{totals?.total_appointments || 0}</div>
-          <div className="text-sm text-gray-500 mt-1">תורים שהושלמו</div>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-6">
+          <div className="mb-3">
+            <span className="material-symbols-outlined text-2xl p-2 rounded-xl text-blue-500 bg-blue-50">calendar_today</span>
+          </div>
+          <div className="text-2xl font-bold text-on-surface">{totals?.total_appointments || 0}</div>
+          <div className="text-sm text-on-surface-variant mt-1">תורים שהושלמו</div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="text-2xl mb-1">👤</div>
-          <div className="text-2xl font-bold text-gray-900">{customerStats?.total_customers || 0}</div>
-          <div className="text-sm text-gray-500 mt-1">לקוחות סה"כ</div>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-6">
+          <div className="mb-3">
+            <span className="material-symbols-outlined text-2xl p-2 rounded-xl text-purple-500 bg-purple-50">person</span>
+          </div>
+          <div className="text-2xl font-bold text-on-surface">{customerStats?.total_customers || 0}</div>
+          <div className="text-sm text-on-surface-variant mt-1">לקוחות סה"כ</div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="text-2xl mb-1">🔄</div>
-          <div className="text-2xl font-bold text-gray-900">{retentionPct}%</div>
-          <div className="text-sm text-gray-500 mt-1">לקוחות חוזרים</div>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-6">
+          <div className="mb-3">
+            <span className="material-symbols-outlined text-2xl p-2 rounded-xl text-amber-500 bg-amber-50">repeat</span>
+          </div>
+          <div className="text-2xl font-bold text-on-surface">{retentionPct}%</div>
+          <div className="text-sm text-on-surface-variant mt-1">לקוחות חוזרים</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Monthly Revenue */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">הכנסות חודשיות (6 חודשים אחרונים)</h2>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-6">
+          <h2 className="font-headline font-bold text-lg text-on-surface mb-4">הכנסות חודשיות (6 חודשים אחרונים)</h2>
           {monthlyRevenue.length === 0 ? (
-            <p className="text-gray-400 text-sm">אין נתונים</p>
+            <p className="text-on-surface-variant text-sm">אין נתונים</p>
           ) : (
             <div className="space-y-2.5">
               {monthlyRevenue.map(m => (
@@ -99,7 +107,7 @@ export default function AdminAnalytics() {
                   label={formatMonth(m.month)}
                   value={Math.round(m.revenue)}
                   max={maxRevenue}
-                  color="bg-indigo-500"
+                  color="bg-primary"
                 />
               ))}
             </div>
@@ -107,10 +115,10 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Top Services */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">שירותים מובילים</h2>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-6">
+          <h2 className="font-headline font-bold text-lg text-on-surface mb-4">שירותים מובילים</h2>
           {topServices.length === 0 ? (
-            <p className="text-gray-400 text-sm">אין נתונים</p>
+            <p className="text-on-surface-variant text-sm">אין נתונים</p>
           ) : (
             <div className="space-y-2.5">
               {topServices.map(s => (
@@ -129,10 +137,10 @@ export default function AdminAnalytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Busiest Hours */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">שעות עומס</h2>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-6">
+          <h2 className="font-headline font-bold text-lg text-on-surface mb-4">שעות עומס</h2>
           {busiestHours.length === 0 ? (
-            <p className="text-gray-400 text-sm">אין נתונים</p>
+            <p className="text-on-surface-variant text-sm">אין נתונים</p>
           ) : (
             <div className="space-y-1.5">
               {busiestHours.map(h => (
@@ -141,7 +149,7 @@ export default function AdminAnalytics() {
                   label={HOUR_LABELS[h.hour]}
                   value={h.count}
                   max={maxHour}
-                  color="bg-amber-500"
+                  color="bg-amber-400"
                 />
               ))}
             </div>
@@ -149,15 +157,15 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Customer Breakdown */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">פילוח לקוחות</h2>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-6">
+          <h2 className="font-headline font-bold text-lg text-on-surface mb-4">פילוח לקוחות</h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-primary/10 rounded-xl">
               <div>
-                <p className="text-sm font-medium text-indigo-900">לקוחות חדשים</p>
-                <p className="text-xs text-indigo-600">ביקרו פעם אחת בלבד</p>
+                <p className="text-sm font-medium text-on-surface">לקוחות חדשים</p>
+                <p className="text-xs text-primary">ביקרו פעם אחת בלבד</p>
               </div>
-              <span className="text-2xl font-bold text-indigo-700">{newCustomers}</span>
+              <span className="text-2xl font-bold text-primary">{newCustomers}</span>
             </div>
             <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl">
               <div>
@@ -168,11 +176,11 @@ export default function AdminAnalytics() {
             </div>
             {customerStats?.total_customers > 0 && (
               <div className="mt-2">
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <div className="flex justify-between text-xs text-on-surface-variant mb-1">
                   <span>אחוז שימור לקוחות</span>
                   <span>{retentionPct}%</span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="w-full bg-surface-container rounded-full h-2">
                   <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${retentionPct}%` }} />
                 </div>
               </div>

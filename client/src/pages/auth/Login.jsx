@@ -1,4 +1,9 @@
 import { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { login } from '../../api/auth';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
+import GoogleSignInButton from '../../components/common/GoogleSignInButton';
 
 const QA_USERS = [
   { business: 'סלון ענת', name: 'ענת כהן',    role: 'מנהל',   email: 'anat@demo.com' },
@@ -18,15 +23,10 @@ const QA_USERS = [
 ];
 
 const ROLE_STYLE = {
-  'מנהל': 'bg-purple-100 text-purple-700',
-  'עובד':  'bg-blue-100 text-blue-700',
-  'לקוח':  'bg-green-100 text-green-700',
+  'מנהל': 'bg-primary/10 text-primary',
+  'עובד':  'bg-secondary/10 text-secondary',
+  'לקוח':  'bg-emerald-100 text-emerald-700',
 };
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { login } from '../../api/auth';
-import { useAuth } from '../../hooks/useAuth';
-import { useToast } from '../../hooks/useToast';
-import GoogleSignInButton from '../../components/common/GoogleSignInButton';
 
 const OAUTH_ERRORS = {
   google_cancelled: 'הכניסה עם Google בוטלה',
@@ -55,10 +55,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!email || !password) {
-      setError('יש למלא אימייל וסיסמה');
-      return;
-    }
+    if (!email || !password) { setError('יש למלא אימייל וסיסמה'); return; }
     setLoading(true);
     try {
       const data = await login({ email, password });
@@ -75,134 +72,135 @@ export default function Login() {
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex flex-col items-center justify-center p-4" dir="rtl">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4 shadow-lg">
-            <span className="text-3xl">📅</span>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6" dir="rtl">
+      {/* Decorative blobs */}
+      <div className="fixed -top-20 -right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="fixed -bottom-20 -left-20 w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none -z-10" />
+
+      <div className="w-full max-w-[440px] flex flex-col gap-8">
+        {/* Header */}
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 rounded-2xl primary-gradient flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
+            <span className="material-symbols-outlined text-white text-3xl">event_available</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">תוריי</h1>
-          <p className="text-gray-500 mt-2">כניסה לחשבון שלך</p>
+          <div>
+            <h1 className="font-headline font-extrabold text-4xl tracking-tight text-on-surface">ברוכים השבים</h1>
+            <p className="text-on-surface-variant mt-2">שמחים לראות אתכם, אנא התחברו לחשבונכם</p>
+          </div>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_32px_48px_-4px_rgba(25,28,30,0.08)] p-8 flex flex-col gap-6">
           {(error || oauthError) && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-3 bg-error-container border border-red-200 rounded-xl text-error text-sm font-medium">
               {error || oauthError}
             </div>
           )}
 
-          {/* Google sign in */}
-          <GoogleSignInButton href={googleHref} />
-
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">או עם אימייל וסיסמה</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                כתובת אימייל
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
-                dir="ltr"
-              />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {/* Email */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold text-on-surface-variant pr-1">אימייל</label>
+              <div className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  dir="ltr"
+                  className="w-full px-5 py-3.5 pl-11 bg-surface-container-low border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim text-on-surface placeholder:text-outline/50 transition-all"
+                />
+                <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/40 text-xl">mail</span>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                סיסמה
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="הזן סיסמה"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
-              />
+            {/* Password */}
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center pr-1">
+                <label className="text-sm font-semibold text-on-surface-variant">סיסמה</label>
+                <Link to="/forgot-password" className="text-primary text-xs font-bold hover:underline">שכחת סיסמה?</Link>
+              </div>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-5 py-3.5 pl-11 bg-surface-container-low border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim text-on-surface placeholder:text-outline/50 transition-all"
+                />
+                <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/40 text-xl">lock</span>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+              className="w-full py-3.5 primary-gradient text-white font-headline font-bold text-base rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {loading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  מתחבר...
-                </>
-              ) : 'כניסה'}
+                <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> מתחבר...</>
+              ) : 'התחברות למערכת'}
             </button>
           </form>
 
-          <div className="mt-4 text-center">
-            <Link to="/forgot-password" className="text-sm text-indigo-500 hover:text-indigo-700">
-              שכחתי סיסמה
-            </Link>
+          {/* Divider */}
+          <div className="relative flex items-center">
+            <div className="flex-grow border-t border-surface-container-high" />
+            <span className="mx-4 text-outline text-xs font-semibold uppercase tracking-widest">או</span>
+            <div className="flex-grow border-t border-surface-container-high" />
           </div>
 
-          <div className="mt-4 text-center text-sm text-gray-500">
-            אין לך חשבון?{' '}
+          <GoogleSignInButton href={googleHref} />
+
+          <p className="text-center text-sm text-on-surface-variant">
+            עדיין אין לך חשבון?{' '}
             <Link
               to={redirect?.startsWith('/book/') ? `/register?slug=${redirect.split('/book/')[1]}` : '/register'}
-              className="text-indigo-600 hover:text-indigo-700 font-medium"
+              className="text-primary font-bold hover:underline mr-1"
             >
-              הירשם כאן
+              הרשמה עכשיו
             </Link>
-          </div>
+          </p>
         </div>
 
-      </div>
+        {/* QA Panel - mobile only */}
+        <div className="lg:hidden w-full">
+          <button
+            onClick={() => setQaOpen(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-surface-container-lowest/80 hover:bg-surface-container-lowest border border-dashed border-outline-variant rounded-xl text-sm text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            <span>משתמשי בדיקה (QA)</span>
+            <span className="material-symbols-outlined text-base">{qaOpen ? 'expand_less' : 'expand_more'}</span>
+          </button>
 
-      {/* QA quick-login panel — mobile only */}
-      <div className="lg:hidden mt-4 w-full max-w-md">
-        <button
-          onClick={() => setQaOpen(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-2.5 bg-white/70 hover:bg-white border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          <span>משתמשי בדיקה (QA)</span>
-          <span>{qaOpen ? '▲' : '▼'}</span>
-        </button>
-
-        {qaOpen && (
-          <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 text-xs text-gray-400">
-              סיסמה לכולם: <span className="font-mono font-bold text-gray-600">demo1234</span> — לחץ על משתמש למילוי אוטומטי
-            </div>
-            {['סלון ענת', 'ברבר דני'].map(biz => (
-              <div key={biz}>
-                <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500">{biz}</div>
-                {QA_USERS.filter(u => u.business === biz).map(u => (
-                  <button
-                    key={u.email}
-                    onClick={() => { setEmail(u.email); setPassword('demo1234'); setQaOpen(false); }}
-                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-indigo-50 transition-colors border-b border-gray-50 last:border-0"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_STYLE[u.role]}`}>{u.role}</span>
-                      <span className="text-sm text-gray-800 font-medium">{u.name}</span>
-                    </div>
-                    <span className="text-xs text-gray-400 font-mono">{u.email}</span>
-                  </button>
-                ))}
+          {qaOpen && (
+            <div className="mt-2 bg-surface-container-lowest border border-outline-variant/30 rounded-2xl shadow-lg overflow-hidden">
+              <div className="px-4 py-2 bg-surface-container-low border-b border-outline-variant/20 text-xs text-on-surface-variant">
+                סיסמה: <span className="font-mono font-bold text-on-surface">demo1234</span> — לחץ למילוי אוטומטי
               </div>
-            ))}
-          </div>
-        )}
+              {['סלון ענת', 'ברבר דני'].map(biz => (
+                <div key={biz}>
+                  <div className="px-4 py-1.5 bg-surface-container border-b border-outline-variant/10 text-xs font-semibold text-on-surface-variant">{biz}</div>
+                  {QA_USERS.filter(u => u.business === biz).map(u => (
+                    <button
+                      key={u.email}
+                      onClick={() => { setEmail(u.email); setPassword('demo1234'); setQaOpen(false); }}
+                      className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-surface-container-low transition-colors border-b border-outline-variant/10 last:border-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${ROLE_STYLE[u.role]}`}>{u.role}</span>
+                        <span className="text-sm text-on-surface font-medium">{u.name}</span>
+                      </div>
+                      <span className="text-xs text-on-surface-variant font-mono">{u.email}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-
     </div>
   );
 }
